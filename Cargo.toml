@@ -9,3 +9,4 @@ tokio = { version = "1.42.0", features = ["full"] }
 hyper = "1.5.1"
 hyper-util = { version = "0.1.10", features = ["client", "client-legacy"] }
 serde_json = "1.0.133"
+http-body-util = "0.1.2"

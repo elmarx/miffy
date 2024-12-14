@@ -11,10 +11,11 @@ use axum::{
     body::Body,
     extract::{Request, State},
     http::uri::Uri,
-    response::{IntoResponse, Response},
+    response::Response,
     routing::get,
     Router,
 };
+use http_body_util::BodyExt;
 use hyper::StatusCode;
 use hyper_util::{client::legacy::connect::HttpConnector, rt::TokioExecutor};
 
@@ -35,7 +36,10 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn handler(State(client): State<Client>, mut req: Request) -> Result<Response, StatusCode> {
+async fn handler(
+    State(client): State<Client>,
+    mut req: Request,
+) -> Result<axum::response::Response, StatusCode> {
     let path = req.uri().path();
     let path_query = req
         .uri()
@@ -47,9 +51,18 @@ async fn handler(State(client): State<Client>, mut req: Request) -> Result<Respo
 
     *req.uri_mut() = Uri::try_from(uri).unwrap();
 
-    Ok(client
+    let upstream_response = client
         .request(req)
         .await
-        .map_err(|_| StatusCode::BAD_REQUEST)?
-        .into_response())
+        .map_err(|_| StatusCode::BAD_GATEWAY)?;
+
+    let (head, body) = upstream_response.into_parts();
+
+    let body = body.collect().await.map_err(|_| StatusCode::BAD_GATEWAY)?;
+
+    let body = body.to_bytes();
+
+    let response = Response::from_parts(head, Body::from(body));
+
+    Ok(response)
 }
