@@ -4,9 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-axum = { version = "0.8.0-alpha.1", features = ["macros"] }
 tokio = { version = "1.42.0", features = ["full"] }
 hyper = "1.5.1"
-hyper-util = { version = "0.1.10", features = ["client", "client-legacy"] }
+hyper-util = { version = "0.1.10", features = ["server", "http1", "client", "client-legacy"] }
 serde_json = "1.0.133"
 http-body-util = "0.1.2"
+
+[dev-dependencies]
+axum = { version = "0.8.0-alpha.1", features = ["macros"] }
