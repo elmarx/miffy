@@ -12,6 +12,13 @@ use std::convert::Infallible;
 use tokio::net::TcpListener;
 use tokio::sync::oneshot;
 
+#[cfg(not(target_env = "msvc"))]
+use tikv_jemallocator::Jemalloc;
+
+#[cfg(not(target_env = "msvc"))]
+#[global_allocator]
+static GLOBAL: Jemalloc = Jemalloc;
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let listener = TcpListener::bind("0.0.0.0:8080").await?;
