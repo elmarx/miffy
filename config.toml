@@ -1,0 +1,20 @@
+reference = "http://127.0.0.1:3000"
+candidate = "http://127.0.0.1:3001"
+
+routes = [
+    { path = "/api/{value}" },
+    { path = "/api/13", candidate = "http://localhost:1337" },
+    { path = "/api/42", reference = "http://localhost:3001", candidate = "http://localhost:3000" },
+    { path = "/api/00", reference = "http://localhost:3000", candidate = "http://localhost:3000" },
+]
+
+[kafka]
+topic = "miffy"
+"bootstrap.servers" = "localhost:9092"
+
+# sample values for ssl/sasl
+# "security.protocol" = "SASL_SSL"
+# "ssl.ca.location" = "/var/run/secrets/ca.pem"
+# "sasl.mechanisms" = "PLAIN"
+# "sasl.username" = "my-service"
+# "sasl.password" = "my-secret"
