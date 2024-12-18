@@ -20,6 +20,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let proxy = Proxy::new(
         "http://127.0.0.1:3001".into(),
         "http://127.0.0.1:3000".into(),
+        &["/api/{value}"],
     );
 
     // We start a loop to continuously accept incoming connections
