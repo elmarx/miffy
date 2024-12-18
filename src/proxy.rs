@@ -4,6 +4,9 @@ use hyper::body::Bytes;
 use hyper::{Request, Response, StatusCode, Uri};
 use hyper_util::client::legacy::connect::HttpConnector;
 use hyper_util::client::legacy::Client;
+use rdkafka::producer::FutureRecord;
+use rdkafka::ClientConfig;
+use std::time::Duration;
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::Sender;
 
@@ -13,6 +16,7 @@ pub struct Proxy {
     candidate_base: String,
     reference_base: String,
     router: matchit::Router<bool>,
+    producer: rdkafka::producer::FutureProducer,
 }
 
 impl Proxy {
@@ -23,12 +27,19 @@ impl Proxy {
             router.insert(r, true).unwrap();
         }
 
+        let producer = ClientConfig::new()
+            .set("bootstrap.servers", "localhost:9092")
+            .set("message.timeout.ms", "5000")
+            .create()
+            .unwrap();
+
         Self {
             client: Client::builder(hyper_util::rt::TokioExecutor::new())
                 .build(HttpConnector::new()),
             candidate_base,
             reference_base,
             router,
+            producer,
         }
     }
 
@@ -65,8 +76,17 @@ impl Proxy {
             let (candidate_header, candidate_body) = response.into_parts();
             let (reference_header, reference_body) = reference.into_parts();
 
-            println!("Candidate: {candidate_header:?} {candidate_body:#?}");
-            println!("Reference: {reference_header:?} {reference_body:#?}");
+            let message = format!("Candidate: {candidate_header:?} {candidate_body:#?}\nReference: {reference_header:?} {reference_body:#?}");
+
+            let delivery_status = self_clone
+                .producer
+                .send::<(), _, _>(
+                    FutureRecord::to("miffy").payload(&message),
+                    Duration::from_secs(0),
+                )
+                .await;
+
+            println!("{delivery_status:?}")
         });
 
         tx

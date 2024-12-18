@@ -16,6 +16,8 @@ equal.
 
 * start the demo-servers: `cargo run --example demo`. This will start two servers listening to `localhost:3000` (the
   reference) and `localhost:3001` (the candidate) with one endpoint: `/api/{value}`.
+* start kafka: `docker-compose up -d`
 * start **miffy**: `cargo run`.
-* send a request to a path under test: `curl http://localhost:8080/api/3`, observe the response and the log of miffy.
-* send a request to any other path: `curl http://localhost:8080`, observe the response, nothing logged in miffy
+* send a request to a path under test: `curl http://localhost:8080/api/3`
+* send a request to any other path: `curl http://localhost:8080`
+* observe results in kafka: `kcat -b localhost:9092 -e -t miffy`
