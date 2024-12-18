@@ -11,6 +11,11 @@ serde_json = "1.0.133"
 http-body-util = "0.1.2"
 matchit = "0.8.4"
 rdkafka = "0.37.0"
+http = "1.2.0"
+serde = { version = "1.0.216", features = ["derive"] }
+http-serde = "2.1.1"
+bytes = { version = "1.9.0", features = ["serde"] }
+serde_with = { version = "3.11.0", features = ["base64"] }
 
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
 tikv-jemallocator = "0.6"
