@@ -12,15 +12,23 @@ pub struct Proxy {
     client: Client<HttpConnector, Full<Bytes>>,
     candidate_base: String,
     reference_base: String,
+    router: matchit::Router<bool>,
 }
 
 impl Proxy {
-    pub(crate) fn new(candidate_base: String, reference_base: String) -> Self {
+    pub(crate) fn new(candidate_base: String, reference_base: String, routes: &[&str]) -> Self {
+        let mut router = matchit::Router::new();
+
+        for &r in routes {
+            router.insert(r, true).unwrap();
+        }
+
         Self {
             client: Client::builder(hyper_util::rt::TokioExecutor::new())
                 .build(HttpConnector::new()),
             candidate_base,
             reference_base,
+            router,
         }
     }
 
@@ -39,7 +47,11 @@ impl Proxy {
     /// send the request to the candidate
     ///
     /// receives the reference-response via the returned sender
-    pub fn diff(&self, mut req: Request<Full<Bytes>>, path_query: &str) -> Sender<Response<Bytes>> {
+    pub fn compare_candidate(
+        &self,
+        mut req: Request<Full<Bytes>>,
+        path_query: &str,
+    ) -> Sender<Response<Bytes>> {
         let (tx, rx) = oneshot::channel::<Response<Bytes>>();
 
         let candidate_uri = format!("{}{}", self.candidate_base, path_query);
@@ -64,6 +76,12 @@ impl Proxy {
         &self,
         req: Request<hyper::body::Incoming>,
     ) -> hyper::Result<Response<Full<Bytes>>> {
+        let is_shadow_test = self
+            .router
+            .at(req.uri().path())
+            .map(|it| *it.value)
+            .unwrap_or_default();
+
         let mut req = slurp_request(req).await.unwrap();
 
         let path = req.uri().path();
@@ -73,7 +91,12 @@ impl Proxy {
             .map(|v| v.as_str())
             .unwrap_or(path);
 
-        let tx = self.diff(req.clone(), path_query);
+        let tx = if is_shadow_test {
+            Some(self.compare_candidate(req.clone(), path_query))
+        } else {
+            None
+        };
+
         let reference_uri = format!("{}{}", self.reference_base, path_query);
         *req.uri_mut() = Uri::try_from(reference_uri).unwrap();
 
@@ -87,7 +110,9 @@ impl Proxy {
         let response = slurp_response(response).await.unwrap();
 
         // send the reference-response over to the candidate-task
-        tx.send(response.clone()).unwrap();
+        if let Some(tx) = tx {
+            tx.send(response.clone()).unwrap();
+        }
 
         Ok(response.map(Full::new))
     }
