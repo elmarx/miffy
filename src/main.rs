@@ -3,6 +3,7 @@ use hyper::service::service_fn;
 use hyper_util::rt::TokioIo;
 use tokio::net::TcpListener;
 mod proxy;
+mod sample;
 mod slurp;
 
 use crate::proxy::Proxy;

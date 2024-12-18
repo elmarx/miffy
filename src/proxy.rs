@@ -1,3 +1,4 @@
+use crate::sample::Sample;
 use crate::slurp::{slurp_request, slurp_response};
 use http_body_util::Full;
 use hyper::body::Bytes;
@@ -45,11 +46,24 @@ impl Proxy {
         }
     }
 
+    pub async fn publish(&self, sample: Sample) {
+        if let Some(message) = sample.message() {
+            let delivery_status = self
+                .producer
+                .send::<(), _, _>(
+                    FutureRecord::to(&self.topic).payload(&message),
+                    Duration::from_secs(0),
+                )
+                .await;
+            println!("{delivery_status:?}")
+        }
+    }
+
     /// send the query to the candidate
-    pub async fn query_candidate(&self, req: Request<Full<Bytes>>) -> Response<Bytes> {
+    pub async fn query_candidate(&self, req: Request<Bytes>) -> Response<Bytes> {
         let candidate_response = self
             .client
-            .request(req)
+            .request(req.map(Full::new))
             .await
             .map_err(|_| StatusCode::BAD_GATEWAY)
             .unwrap();
@@ -60,35 +74,21 @@ impl Proxy {
     /// mirror the request to the candidate
     ///
     /// receives the reference-response via the returned sender
-    pub fn mirror(
-        &self,
-        mut req: Request<Full<Bytes>>,
-        path_query: &str,
-    ) -> Sender<Response<Bytes>> {
+    pub fn mirror(&self, mut req: Request<Bytes>, path_query: &str) -> Sender<Response<Bytes>> {
         let (tx, rx) = oneshot::channel::<Response<Bytes>>();
 
         let candidate_uri = format!("{}{}", self.candidate_base, path_query);
-        *req.uri_mut() = Uri::try_from(candidate_uri).unwrap();
 
         let self_clone = self.clone();
         tokio::spawn(async move {
-            let response = self_clone.query_candidate(req).await;
+            *req.uri_mut() = Uri::try_from(candidate_uri).unwrap();
+
+            let response = self_clone.query_candidate(req.clone()).await;
             let reference = rx.await.unwrap();
 
-            let (candidate_header, candidate_body) = response.into_parts();
-            let (reference_header, reference_body) = reference.into_parts();
+            let sample = Sample::new(req, reference, response);
 
-            let message = format!("Candidate: {candidate_header:?} {candidate_body:#?}\nReference: {reference_header:?} {reference_body:#?}");
-
-            let delivery_status = self_clone
-                .producer
-                .send::<(), _, _>(
-                    FutureRecord::to(&self_clone.topic).payload(&message),
-                    Duration::from_secs(0),
-                )
-                .await;
-
-            println!("{delivery_status:?}")
+            self_clone.publish(sample).await;
         });
 
         tx
@@ -120,7 +120,7 @@ impl Proxy {
 
         let response = self
             .client
-            .request(req)
+            .request(req.map(Full::new))
             .await
             .map_err(|_| StatusCode::BAD_GATEWAY)
             .unwrap();

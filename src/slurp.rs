@@ -1,13 +1,10 @@
-use http_body_util::{BodyExt, Full};
+use http_body_util::BodyExt;
 use hyper::body::Bytes;
 use hyper::{Request, Response};
 
-pub async fn slurp_request(
-    req: Request<hyper::body::Incoming>,
-) -> hyper::Result<Request<Full<Bytes>>> {
+pub async fn slurp_request(req: Request<hyper::body::Incoming>) -> hyper::Result<Request<Bytes>> {
     let (parts, body) = req.into_parts();
     let body = body.collect().await?.to_bytes();
-    let body = Full::new(body);
     Ok(Request::from_parts(parts, body))
 }
 
