@@ -12,6 +12,14 @@ equal.
   *reference*, always return a response as fast as possible
 - offload complex comparison: only basic comparison, in case of doubt publish both responses as different to kafka
 
+## Development
+
+Required tools:
+
+- [rust](https://www.rust-lang.org/tools/install)
+- docker-compose
+- [kcat](https://github.com/edenhill/kcat)
+
 ## Demo
 
 * start the demo-servers: `cargo run --example demo`. This will start two servers listening to `localhost:3000` (the
