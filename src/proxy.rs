@@ -1,7 +1,7 @@
 use crate::error;
 use crate::error::Result;
 use crate::sample::Sample;
-use crate::slurp::slurp_response;
+use crate::slurp;
 use http::uri::PathAndQuery;
 use http_body_util::Full;
 use hyper::body::Bytes;
@@ -50,6 +50,18 @@ impl Proxy {
         }
     }
 
+    pub async fn request(&self, mut req: Request<Bytes>, uri: String) -> Result<Response<Bytes>> {
+        *req.uri_mut() = Uri::try_from(uri)?;
+
+        let response = self
+            .client
+            .request(req.map(Full::new))
+            .await
+            .map_err(error::Upstream::Request)?;
+
+        slurp::response(response).await
+    }
+
     pub async fn publish(&self, sample: Sample) {
         if let Some(message) = sample.message() {
             let delivery_status = self
@@ -69,19 +81,9 @@ impl Proxy {
         candidate_uri: String,
         rx: Receiver<Response<Bytes>>,
     ) -> std::result::Result<(), error::Internal> {
-        // keep the original request as-is for comparison
-        let mut upstream_req = original_request.clone();
-        *upstream_req.uri_mut() = Uri::try_from(candidate_uri).expect("invalid candidate-uri");
-
-        let candidate_response = self
-            .client
-            .request(upstream_req.map(Full::new))
-            .await
-            .map_err(error::Upstream::Request)?;
-
-        let response = slurp_response(candidate_response)
-            .await
-            .expect("TODO: the candidate failed. This should be reported/published, too");
+        let response = self
+            .request(original_request.clone(), candidate_uri)
+            .await?;
 
         // if the sender is dropped, this will receive a RecvError, we're just logging an error then
         let reference = rx.await?;
@@ -110,7 +112,7 @@ impl Proxy {
         tx
     }
 
-    pub async fn handle(&self, mut req: Request<Bytes>) -> Result<Response<Full<Bytes>>> {
+    pub async fn handle(&self, req: Request<Bytes>) -> Result<Response<Full<Bytes>>> {
         let is_shadow_test = self.router.at(req.uri().path()).is_ok_and(|it| *it.value);
 
         let path_query = req
@@ -125,16 +127,8 @@ impl Proxy {
         };
 
         let reference_uri = format!("{}{}", self.reference_base, path_query);
-        *req.uri_mut() = Uri::try_from(reference_uri)?;
 
-        let response = self
-            .client
-            .request(req.map(Full::new))
-            .await
-            .map_err(error::Upstream::Request)?;
-
-        // TODO: instead of "?" here, send the err via tx, so we can report that that reference failed
-        let response = slurp_response(response).await?;
+        let response = self.request(req, reference_uri).await?;
 
         // send the reference-response over to the candidate-task
         if let Some(tx) = tx {
