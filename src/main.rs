@@ -1,7 +1,13 @@
+use crate::error::recover;
+use crate::proxy::Proxy;
 use hyper::server::conn::http1;
-use hyper::service::service_fn;
 use hyper_util::rt::TokioIo;
+use hyper_util::service::TowerToHyperService;
+use std::sync::Arc;
+#[cfg(not(target_env = "msvc"))]
+use tikv_jemallocator::Jemalloc;
 use tokio::net::TcpListener;
+use tower::ServiceBuilder;
 use tracing::error;
 
 mod error;
@@ -10,11 +16,6 @@ mod proxy;
 mod representation;
 mod sample;
 mod slurp;
-
-use crate::error::recover;
-use crate::proxy::Proxy;
-#[cfg(not(target_env = "msvc"))]
-use tikv_jemallocator::Jemalloc;
 
 #[cfg(not(target_env = "msvc"))]
 #[global_allocator]
@@ -25,33 +26,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     log::init();
 
     let listener = TcpListener::bind("0.0.0.0:8080").await?;
-    let proxy = Proxy::new(
+    let proxy = Arc::new(Proxy::new(
         "http://127.0.0.1:3001".into(),
         "http://127.0.0.1:3000".into(),
         &["/api/{value}"],
-    );
+    ));
 
-    // We start a loop to continuously accept incoming connections
+    let trace_layer = log::new_trace_layer();
+
     loop {
         let (stream, _) = listener.accept().await?;
-
-        // Use an adapter to access something implementing `tokio::io` traits as if they implement
-        // `hyper::rt` IO traits.
         let io = TokioIo::new(stream);
 
         let proxy = proxy.clone();
 
-        // Spawn a tokio task to serve multiple connections concurrently
+        let svc = ServiceBuilder::new()
+            .layer(trace_layer.clone())
+            .service_fn(move |request| {
+                let proxy = proxy.clone();
+                async move { proxy.handle(request).await.or_else(recover) }
+            });
+        let svc = TowerToHyperService::new(svc);
+
         tokio::task::spawn(async move {
-            // Finally, we bind the incoming connection to our `hello` service
-            if let Err(err) = http1::Builder::new()
-                // `service_fn` converts our function in a `Service`
-                .serve_connection(
-                    io,
-                    service_fn(|request| async { proxy.handle(request).await.or_else(recover) }),
-                )
-                .await
-            {
+            if let Err(err) = http1::Builder::new().serve_connection(io, svc).await {
                 error!("Error serving connection: {err:?}");
             }
         });
