@@ -3,6 +3,7 @@ use crate::error::Miffy::UpstreamRequest;
 use crate::error::Result;
 use crate::sample::Sample;
 use crate::slurp::{slurp_request, slurp_response};
+use http::uri::PathAndQuery;
 use http_body_util::Full;
 use hyper::body::Bytes;
 use hyper::{Request, Response, Uri};
@@ -118,12 +119,10 @@ impl Proxy {
 
         let mut req = slurp_request(req).await?;
 
-        let path = req.uri().path();
         let path_query = req
             .uri()
             .path_and_query()
-            .map(|v| v.as_str())
-            .unwrap_or(path);
+            .map_or(req.uri().path(), PathAndQuery::as_str);
 
         let tx = if is_shadow_test {
             Some(self.spawn_mirror(req.clone(), path_query))
