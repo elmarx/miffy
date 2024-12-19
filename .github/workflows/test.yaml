@@ -1,0 +1,18 @@
+name: test
+on: [ push, pull_request ]
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+
+      - run: cargo fmt --check
+      - run: cargo check --all-targets
+      - run: cargo test --all-features
+
+      - uses: crusty-pie/clippy@v1
+        with:
+          args: --all-features --all-targets
