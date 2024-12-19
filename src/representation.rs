@@ -75,6 +75,7 @@ impl From<Request<Bytes>> for RequestRepr {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod test {
     use crate::representation::Body;
     use bytes::Bytes;
