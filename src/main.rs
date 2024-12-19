@@ -44,7 +44,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             .layer(trace_layer.clone())
             .service_fn(move |request| {
                 let proxy = proxy.clone();
-                async move { proxy.handle(request).await.or_else(recover) }
+                async move {
+                    match slurp::request(request).await {
+                        Ok(request) => proxy.handle(request).await.or_else(recover),
+                        Err(e) => error::handle_incoming_request(&e),
+                    }
+                }
             });
         let svc = TowerToHyperService::new(svc);
 
