@@ -10,7 +10,7 @@ pub async fn request(req: Request<hyper::body::Incoming>) -> hyper::Result<Reque
     Ok(Request::from_parts(parts, body))
 }
 
-pub async fn slurp_response(
+pub async fn response(
     res: Response<hyper::body::Incoming>,
 ) -> Result<Response<Bytes>, error::Upstream> {
     let (head, body) = res.into_parts();
