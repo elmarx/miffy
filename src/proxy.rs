@@ -13,6 +13,7 @@ use rdkafka::ClientConfig;
 use std::time::Duration;
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::{Receiver, Sender};
+use tracing::debug;
 
 #[derive(Clone)]
 pub struct Proxy {
@@ -58,7 +59,7 @@ impl Proxy {
                     Duration::from_secs(0),
                 )
                 .await;
-            println!("{delivery_status:?}")
+            debug!("Delivery status: {delivery_status:?}");
         }
     }
 
@@ -102,7 +103,7 @@ impl Proxy {
         tokio::spawn(async move {
             // if this fails it just means the mirroring failed (for any reason). The actual request (to the reference) is not impacted
             if let Err(e) = self_clone.mirror(req, candidate_uri, rx).await {
-                eprintln!("internal error mirroring request: {e:?}.");
+                error!("internal error mirroring request: {e:?}.");
             }
         });
 
@@ -146,7 +147,7 @@ impl Proxy {
         if let Some(tx) = tx {
             if let Err(e) = tx.send(response.clone()) {
                 // sending over the response failed, that's a shame, but it just means testing failed, we can still successfully respond to the client
-                eprintln!("error sending response to shadow-test: {:?}", e);
+                error!("error sending response to shadow-test: {e:?}");
             }
         }
 
