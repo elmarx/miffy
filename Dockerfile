@@ -8,6 +8,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry --mount=type=cache,targe
 
 FROM debian:stable-slim
 
+ENV LOG_JSON=1
 RUN adduser --system miffy
 COPY --from=builder /usr/local/bin/miffy /usr/local/bin
 
