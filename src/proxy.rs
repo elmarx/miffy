@@ -1,7 +1,7 @@
-use crate::error;
 use crate::error::Result;
 use crate::sample::Sample;
 use crate::slurp;
+use crate::{error, sample};
 use http::uri::PathAndQuery;
 use http_body_util::Full;
 use hyper::body::Bytes;
@@ -79,11 +79,12 @@ impl Proxy {
         &self,
         original_request: Request<Bytes>,
         candidate_uri: String,
-        rx: Receiver<Response<Bytes>>,
+        rx: Receiver<sample::Result>,
     ) -> std::result::Result<(), error::Internal> {
         let response = self
             .request(original_request.clone(), candidate_uri)
-            .await?;
+            .await
+            .map_err(|e| (&e).into());
 
         // if the sender is dropped, this will receive a RecvError, we're just logging an error then
         let reference = rx.await?;
@@ -97,10 +98,10 @@ impl Proxy {
     /// spawn an independent task that mirrors the request to the client and publishes the results
     ///
     /// returns a sender for the main-thread to send over the actual response by the reference
-    pub fn spawn_mirror(&self, req: Request<Bytes>, path_query: &str) -> Sender<Response<Bytes>> {
+    pub fn spawn_mirror(&self, req: Request<Bytes>, path_query: &str) -> Sender<sample::Result> {
         let candidate_uri = format!("{}{}", self.candidate_base, path_query);
 
-        let (tx, rx) = oneshot::channel::<Response<Bytes>>();
+        let (tx, rx) = oneshot::channel::<sample::Result>();
         let self_clone = self.clone();
         tokio::spawn(async move {
             // if this fails it just means the mirroring failed (for any reason). The actual request (to the reference) is not impacted
@@ -128,16 +129,20 @@ impl Proxy {
 
         let reference_uri = format!("{}{}", self.reference_base, path_query);
 
-        let response = self.request(req, reference_uri).await?;
+        let response = self.request(req, reference_uri).await;
 
         // send the reference-response over to the candidate-task
         if let Some(tx) = tx {
-            if let Err(e) = tx.send(response.clone()) {
+            let response = match &response {
+                Ok(r) => Ok(r.clone()),
+                Err(e) => Err(e.into()),
+            };
+            if let Err(e) = tx.send(response) {
                 // sending over the response failed, that's a shame, but it just means testing failed, we can still successfully respond to the client
                 error!("error sending response to shadow-test: {e:?}");
             }
         }
 
-        Ok(response.map(Full::new))
+        response.map(|r| r.map(Full::new))
     }
 }
