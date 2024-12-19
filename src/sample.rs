@@ -46,7 +46,7 @@ impl Sample {
 
     pub fn message(self) -> Option<String> {
         let message: SampleMessage = self.into();
-        let msg = serde_json::to_string(&message).unwrap();
+        let msg = serde_json::to_string(&message).expect("failed to serialize sample-message");
         Some(msg)
     }
 }
