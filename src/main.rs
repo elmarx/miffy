@@ -2,11 +2,13 @@ use hyper::server::conn::http1;
 use hyper::service::service_fn;
 use hyper_util::rt::TokioIo;
 use tokio::net::TcpListener;
+mod error;
 mod proxy;
 mod representation;
 mod sample;
 mod slurp;
 
+use crate::error::recover;
 use crate::proxy::Proxy;
 #[cfg(not(target_env = "msvc"))]
 use tikv_jemallocator::Jemalloc;
@@ -40,7 +42,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             // Finally, we bind the incoming connection to our `hello` service
             if let Err(err) = http1::Builder::new()
                 // `service_fn` converts our function in a `Service`
-                .serve_connection(io, service_fn(|request| proxy.handle(request)))
+                .serve_connection(
+                    io,
+                    service_fn(|request| async { proxy.handle(request).await.or_else(recover) }),
+                )
                 .await
             {
                 eprintln!("Error serving connection: {:?}", err);
