@@ -2,7 +2,10 @@ use hyper::server::conn::http1;
 use hyper::service::service_fn;
 use hyper_util::rt::TokioIo;
 use tokio::net::TcpListener;
+use tracing::error;
+
 mod error;
+mod log;
 mod proxy;
 mod representation;
 mod sample;
@@ -19,8 +22,9 @@ static GLOBAL: Jemalloc = Jemalloc;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let listener = TcpListener::bind("0.0.0.0:8080").await?;
+    log::init();
 
+    let listener = TcpListener::bind("0.0.0.0:8080").await?;
     let proxy = Proxy::new(
         "http://127.0.0.1:3001".into(),
         "http://127.0.0.1:3000".into(),
@@ -48,7 +52,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 )
                 .await
             {
-                eprintln!("Error serving connection: {:?}", err);
+                error!("Error serving connection: {err:?}");
             }
         });
     }
