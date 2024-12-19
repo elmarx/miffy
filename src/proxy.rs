@@ -1,8 +1,7 @@
 use crate::error;
-use crate::error::Miffy::UpstreamRequest;
 use crate::error::Result;
 use crate::sample::Sample;
-use crate::slurp::{slurp_request, slurp_response};
+use crate::slurp::slurp_response;
 use http::uri::PathAndQuery;
 use http_body_util::Full;
 use hyper::body::Bytes;
@@ -78,7 +77,7 @@ impl Proxy {
             .client
             .request(upstream_req.map(Full::new))
             .await
-            .map_err(UpstreamRequest)?;
+            .map_err(error::Upstream::Request)?;
 
         let response = slurp_response(candidate_response)
             .await
@@ -111,13 +110,8 @@ impl Proxy {
         tx
     }
 
-    pub async fn handle(
-        &self,
-        req: Request<hyper::body::Incoming>,
-    ) -> Result<Response<Full<Bytes>>> {
+    pub async fn handle(&self, mut req: Request<Bytes>) -> Result<Response<Full<Bytes>>> {
         let is_shadow_test = self.router.at(req.uri().path()).is_ok_and(|it| *it.value);
-
-        let mut req = slurp_request(req).await?;
 
         let path_query = req
             .uri()
@@ -137,7 +131,7 @@ impl Proxy {
             .client
             .request(req.map(Full::new))
             .await
-            .map_err(UpstreamRequest)?;
+            .map_err(error::Upstream::Request)?;
 
         // TODO: instead of "?" here, send the err via tx, so we can report that that reference failed
         let response = slurp_response(response).await?;

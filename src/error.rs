@@ -7,18 +7,15 @@ use std::convert::Infallible;
 use thiserror::Error;
 use tokio::sync::oneshot::error::RecvError;
 
-pub type Result<T> = std::result::Result<T, Miffy>;
+pub type Result<T> = std::result::Result<T, Upstream>;
 
 #[derive(Debug, Error, strum::IntoStaticStr)]
-pub enum Miffy {
-    #[error("error reading request body")]
-    ReadRequestBody(hyper::Error),
-
+pub enum Upstream {
     #[error("error reading upstream response body")]
-    ReadResponseBody(hyper::Error),
+    ReadBody(hyper::Error),
 
     #[error("error sending request to upstream: {0}")]
-    UpstreamRequest(#[source] hyper_util::client::legacy::Error),
+    Request(#[source] hyper_util::client::legacy::Error),
 
     #[error(transparent)]
     InvalidUri(#[from] http::uri::InvalidUri),
@@ -30,21 +27,33 @@ pub enum Internal {
     RecvError(#[from] RecvError),
 
     #[error(transparent)]
-    Miffy(#[from] Miffy),
+    Upstream(#[from] Upstream),
 }
 
 /// recover from errors by providing an error-response
-pub fn recover(err: Miffy) -> std::result::Result<Response<Full<Bytes>>, Infallible> {
+#[expect(clippy::unnecessary_wraps)]
+pub fn recover(err: Upstream) -> std::result::Result<Response<Full<Bytes>>, Infallible> {
     Ok(err.into())
 }
 
-impl From<Miffy> for Response<Full<Bytes>> {
-    fn from(value: error::Miffy) -> Self {
+/// generate a response if reading the incoming request to the proxy fails.
+/// These are typically TCP-errors (where the client is already gone), so returning a response is probably
+/// useless, but anyway
+#[expect(clippy::unnecessary_wraps)]
+pub fn handle_incoming_request(
+    error: &hyper::Error,
+) -> std::result::Result<Response<Full<Bytes>>, Infallible> {
+    Ok(Response::builder()
+        .status(StatusCode::BAD_REQUEST)
+        .body(error.to_string().into())
+        .expect("OK"))
+}
+
+impl From<Upstream> for Response<Full<Bytes>> {
+    fn from(value: error::Upstream) -> Self {
         let status = match value {
-            Miffy::ReadRequestBody(_) => StatusCode::BAD_REQUEST,
-            Miffy::ReadResponseBody(_) => StatusCode::BAD_GATEWAY,
-            Miffy::InvalidUri(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            Miffy::UpstreamRequest(_) => StatusCode::BAD_GATEWAY,
+            Upstream::ReadBody(_) | Upstream::Request(_) => StatusCode::BAD_GATEWAY,
+            Upstream::InvalidUri(_) => StatusCode::INTERNAL_SERVER_ERROR,
         };
 
         let error: &str = (&value).into();
