@@ -1,3 +1,4 @@
+use crate::sample;
 use bytes::Bytes;
 use http::{HeaderValue, Request, Response};
 use serde::Serialize;
@@ -48,6 +49,22 @@ pub struct RequestRepr {
     #[serde(with = "http_serde::uri")]
     uri: http::Uri,
     body: Body,
+}
+
+#[derive(Serialize)]
+#[serde(untagged)]
+pub enum ResultRepr {
+    Ok(ResponseRepr),
+    Err { error: sample::Error },
+}
+
+impl From<sample::Result> for ResultRepr {
+    fn from(value: sample::Result) -> Self {
+        match value {
+            Ok(response) => ResultRepr::Ok(response.into()),
+            Err(error) => ResultRepr::Err { error },
+        }
+    }
 }
 
 impl From<Response<Bytes>> for ResponseRepr {
