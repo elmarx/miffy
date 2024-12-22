@@ -33,7 +33,7 @@ impl Mirror {
         &self,
         original_request: Request<Bytes>,
         candidate_uri: String,
-        reference_rx: Receiver<domain::Result>,
+        reference_rx: Receiver<domain::RequestResult>,
     ) -> Result<(), Internal> {
         let response = self
             .client
@@ -43,7 +43,8 @@ impl Mirror {
         // if the sender is dropped, this will receive a RecvError, we're just logging an error then
         let reference = reference_rx.await?;
 
-        let response: domain::Result = response.map(Into::into).map_err(|e| (&e).into());
+        let response = response.map(Into::into).map_err(|e| (&e).into());
+        let response = domain::RequestResult::new(candidate_uri, response);
 
         // once we have the response of the reference and the candidate, let the publisher process this sample
         let sample = Sample::new(original_request.into(), reference, response);

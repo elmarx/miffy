@@ -1,4 +1,4 @@
-use crate::domain;
+use crate::domain::RequestResult;
 use bytes::Bytes;
 use tokio::sync::oneshot::{Receiver, Sender};
 
@@ -10,13 +10,13 @@ pub enum RequestMode {
     Experiment {
         request: http::Request<Bytes>,
         candidate_uri: String,
-        rx: Receiver<domain::Result>,
+        rx: Receiver<RequestResult>,
     },
 }
 
 /// context for a request: the (live/reference) upstream uri to use, the mode, and an optinioal sender to send results to
 pub struct RequestContext {
     pub reference_uri: String,
-    pub tx: Option<Sender<domain::Result>>,
+    pub tx: Option<Sender<RequestResult>>,
     pub mode: RequestMode,
 }
