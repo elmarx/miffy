@@ -1,4 +1,4 @@
-use crate::serialization;
+use crate::util::serialization;
 use bytes::Bytes;
 use http::HeaderValue;
 use serde::Serialize;
@@ -17,12 +17,12 @@ pub enum Error {
     Body,
 }
 
-impl From<&crate::proxy::error::Upstream> for Error {
-    fn from(value: &crate::proxy::error::Upstream) -> Self {
+impl From<&crate::http::error::Upstream> for Error {
+    fn from(value: &crate::http::error::Upstream) -> Self {
         match value {
-            crate::proxy::error::Upstream::InvalidUri(_) => Error::Uri,
-            crate::proxy::error::Upstream::Request(_) => Error::Request,
-            crate::proxy::error::Upstream::ReadBody(_) => Error::Body,
+            crate::http::error::Upstream::InvalidUri(_) => Error::Uri,
+            crate::http::error::Upstream::Request(_) => Error::Request,
+            crate::http::error::Upstream::ReadBody(_) => Error::Body,
         }
     }
 }
