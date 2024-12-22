@@ -6,8 +6,6 @@ use serde_json::Value;
 use serde_with::base64::Base64;
 use serde_with::serde_as;
 
-pub type Result = std::result::Result<Response, Error>;
-
 /// a simplified representation of technical errors that may be cloned, serialized etc.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -31,14 +29,29 @@ impl From<&crate::http::error::Upstream> for Error {
 #[derive(Serialize)]
 pub struct Sample {
     request: Request,
+    reference: RequestResult,
+    candidate: RequestResult,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RequestResult {
+    url: String,
     #[serde(serialize_with = "serialization::custom_result")]
-    reference: Result,
-    #[serde(serialize_with = "serialization::custom_result")]
-    candidate: Result,
+    response: Result<Response, Error>,
+}
+
+impl RequestResult {
+    pub fn new(url: String, response: Result<Response, Error>) -> Self {
+        Self { url, response }
+    }
 }
 
 impl Sample {
-    pub(crate) fn new(request: Request, reference: Result, candidate: Result) -> Self {
+    pub(crate) fn new(
+        request: Request,
+        reference: RequestResult,
+        candidate: RequestResult,
+    ) -> Self {
         Self {
             request,
             reference,

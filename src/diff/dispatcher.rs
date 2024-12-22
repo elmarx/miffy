@@ -39,7 +39,7 @@ impl Dispatcher {
         path_query: &str,
         (reference, candidate): &(Option<String>, Option<String>),
     ) -> RequestContext {
-        let (tx, rx) = oneshot::channel::<domain::Result>();
+        let (tx, rx) = oneshot::channel::<domain::RequestResult>();
 
         let reference_base = reference.as_ref().unwrap_or(&self.default_reference_base);
         let candidate_base = candidate.as_ref().unwrap_or(&self.default_candidate_base);

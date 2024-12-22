@@ -39,7 +39,7 @@ impl Service {
         let response = self.client.upstream(req, &context.reference_uri).await;
 
         // send the reference-response over to the candidate-task
-        context.tx.send_reference(&response);
+        context.tx.send_reference(context.reference_uri, &response);
 
         response.map(|r| r.map(Full::new))
     }
