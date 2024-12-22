@@ -1,4 +1,4 @@
-use crate::error::Upstream;
+use crate::proxy::error::Upstream;
 use crate::representation::{RequestRepr, ResultRepr};
 use hyper::body::Bytes;
 use hyper::{Request, Response};

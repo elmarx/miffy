@@ -1,5 +1,5 @@
 use crate::error;
-use crate::error::Upstream::ReadBody;
+use crate::proxy::error::Upstream::ReadBody;
 use http_body_util::BodyExt;
 use hyper::body::Bytes;
 use hyper::{Request, Response};
