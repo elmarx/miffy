@@ -1,0 +1,9 @@
+port = 8080
+log_json = false
+
+reference = "http://127.0.0.1:3000"
+candidate = "http://127.0.0.1:3001"
+
+[kafka]
+topic = "miffy"
+brokers = ["localhost:9092"]
