@@ -1,13 +1,54 @@
-use crate::sample;
+use crate::serialization;
 use bytes::Bytes;
-use http::{HeaderValue, Request, Response};
+use http::HeaderValue;
 use serde::Serialize;
 use serde_json::Value;
 use serde_with::base64::Base64;
 use serde_with::serde_as;
 
-#[serde_as]
+pub type Result = std::result::Result<Response, Error>;
+
+/// a simplified representation of technical errors that may be cloned, serialized etc.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Error {
+    Uri,
+    Request,
+    Body,
+}
+
+impl From<&crate::proxy::error::Upstream> for Error {
+    fn from(value: &crate::proxy::error::Upstream) -> Self {
+        match value {
+            crate::proxy::error::Upstream::InvalidUri(_) => Error::Uri,
+            crate::proxy::error::Upstream::Request(_) => Error::Request,
+            crate::proxy::error::Upstream::ReadBody(_) => Error::Body,
+        }
+    }
+}
+
+/// sample represents a shadow-tested request, i.e. a mirrored request that may be analyzed further
 #[derive(Serialize)]
+pub struct Sample {
+    request: Request,
+    #[serde(serialize_with = "serialization::custom_result")]
+    reference: Result,
+    #[serde(serialize_with = "serialization::custom_result")]
+    candidate: Result,
+}
+
+impl Sample {
+    pub(crate) fn new(request: Request, reference: Result, candidate: Result) -> Self {
+        Self {
+            request,
+            reference,
+            candidate,
+        }
+    }
+}
+
+#[serde_as]
+#[derive(Serialize, Debug)]
 #[serde(tag = "type", content = "value")]
 #[serde(rename_all = "lowercase")]
 pub enum Body {
@@ -33,8 +74,8 @@ impl Body {
     }
 }
 
-#[derive(Serialize)]
-pub struct ResponseRepr {
+#[derive(Serialize, Debug)]
+pub struct Response {
     #[serde(with = "http_serde::status_code")]
     status: http::StatusCode,
     #[serde(with = "http_serde::header_map")]
@@ -43,7 +84,7 @@ pub struct ResponseRepr {
 }
 
 #[derive(Serialize)]
-pub struct RequestRepr {
+pub struct Request {
     #[serde(with = "http_serde::method")]
     method: http::Method,
     #[serde(with = "http_serde::uri")]
@@ -51,36 +92,8 @@ pub struct RequestRepr {
     body: Body,
 }
 
-#[derive(Serialize)]
-#[serde(untagged)]
-pub enum ResultRepr {
-    Ok(ResponseRepr),
-    Err { error: sample::Error },
-}
-
-impl From<sample::Result> for ResultRepr {
-    fn from(value: sample::Result) -> Self {
-        match value {
-            Ok(response) => ResultRepr::Ok(response.into()),
-            Err(error) => ResultRepr::Err { error },
-        }
-    }
-}
-
-impl From<Response<Bytes>> for ResponseRepr {
-    fn from(value: Response<Bytes>) -> Self {
-        let body = Body::new(value.headers(), value.body());
-
-        Self {
-            status: value.status(),
-            headers: value.headers().clone(),
-            body,
-        }
-    }
-}
-
-impl From<Request<Bytes>> for RequestRepr {
-    fn from(value: Request<Bytes>) -> Self {
+impl From<http::Request<Bytes>> for Request {
+    fn from(value: http::Request<Bytes>) -> Self {
         let body = Body::new(value.headers(), value.body());
 
         Self {
@@ -91,10 +104,22 @@ impl From<Request<Bytes>> for RequestRepr {
     }
 }
 
+impl From<http::Response<Bytes>> for Response {
+    fn from(value: http::Response<Bytes>) -> Self {
+        let body = Body::new(value.headers(), value.body());
+
+        Self {
+            status: value.status(),
+            headers: value.headers().clone(),
+            body,
+        }
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod test {
-    use crate::representation::Body;
+    use super::Body;
     use bytes::Bytes;
 
     #[test]
