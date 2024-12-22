@@ -9,7 +9,7 @@ RUN cargo install --locked --path . --root /usr/local
 
 FROM debian:stable-slim
 
-ENV LOG_JSON=1
+ENV MIFFY_LOG_JSON=1
 RUN adduser --system miffy
 COPY --from=builder /usr/local/bin/miffy /usr/local/bin
 
