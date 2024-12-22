@@ -3,16 +3,18 @@ use crate::proxy::error::recover;
 use hyper::server::conn::http1;
 use hyper_util::rt::TokioIo;
 use hyper_util::service::TowerToHyperService;
+use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tower::ServiceBuilder;
 use tracing::error;
 
 /// run the main server loop
-pub async fn run(proxy: proxy::Service) -> tokio::io::Result<()> {
+pub async fn run(port: u16, proxy: proxy::Service) -> tokio::io::Result<()> {
     let proxy = Arc::new(proxy);
 
-    let listener = TcpListener::bind("0.0.0.0:8080").await?;
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
+    let listener = TcpListener::bind(addr).await?;
 
     let trace_layer = proxy::log::new_trace_layer();
 

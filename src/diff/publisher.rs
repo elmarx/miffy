@@ -1,4 +1,5 @@
 use crate::domain;
+use crate::settings::Kafka;
 use rdkafka::producer::FutureRecord;
 use rdkafka::ClientConfig;
 use std::time::Duration;
@@ -11,14 +12,17 @@ pub struct Publisher {
 }
 
 impl Publisher {
-    pub fn new(topic: String) -> Self {
+    pub fn new(config: Kafka) -> Self {
         let producer = ClientConfig::new()
-            .set("bootstrap.servers", "localhost:9092")
+            .set("bootstrap.servers", config.brokers.join(","))
             .set("message.timeout.ms", "5000")
             .create()
             .expect("invalid kafka configuration");
 
-        Self { topic, producer }
+        Self {
+            topic: config.topic,
+            producer,
+        }
     }
 
     pub async fn publish(&self, sample: domain::Sample) {
