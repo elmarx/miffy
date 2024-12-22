@@ -2,4 +2,5 @@ routes = [
     { path = "/api/{value}" },
     { path = "/api/13", candidate = "http://localhost:1337" },
     { path = "/api/42", reference = "http://localhost:3001", candidate = "http://localhost:3000" },
+    { path = "/api/00", reference = "http://localhost:3000", candidate = "http://localhost:3000" },
 ]
