@@ -1,3 +1,4 @@
+use crate::proxy::error::recover;
 use hyper::server::conn::http1;
 use hyper_util::rt::TokioIo;
 use hyper_util::service::TowerToHyperService;
@@ -7,13 +8,11 @@ use tikv_jemallocator::Jemalloc;
 use tokio::net::TcpListener;
 use tower::ServiceBuilder;
 use tracing::error;
-use crate::proxy::error;
-use crate::proxy::error::recover;
 
-mod proxy;
-mod representation;
-mod sample;
+mod domain;
 mod log;
+mod proxy;
+mod serialization;
 
 #[cfg(not(target_env = "msvc"))]
 #[global_allocator]
