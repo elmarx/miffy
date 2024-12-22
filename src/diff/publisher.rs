@@ -3,7 +3,7 @@ use crate::settings::Kafka;
 use rdkafka::producer::FutureRecord;
 use rdkafka::ClientConfig;
 use std::time::Duration;
-use tracing::debug;
+use tracing::{debug, info};
 
 #[derive(Clone)]
 pub struct Publisher {
@@ -26,6 +26,14 @@ impl Publisher {
     }
 
     pub async fn publish(&self, sample: domain::Sample) {
+        if sample.is_equal() {
+            info!(
+                "request to {} {} equals reference from {} to, not sending message",
+                sample.request.method, sample.candidate.url, sample.reference.url
+            );
+            return;
+        }
+
         let message = serde_json::to_string(&sample).expect("failed to serialize sample-message");
 
         let delivery_status = self

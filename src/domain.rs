@@ -7,7 +7,7 @@ use serde_with::base64::Base64;
 use serde_with::serde_as;
 
 /// a simplified representation of technical errors that may be cloned, serialized etc.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum Error {
     Uri,
@@ -28,16 +28,16 @@ impl From<&crate::http::error::Upstream> for Error {
 /// sample represents a shadow-tested request, i.e. a mirrored request that may be analyzed further
 #[derive(Serialize)]
 pub struct Sample {
-    request: Request,
-    reference: RequestResult,
-    candidate: RequestResult,
+    pub request: Request,
+    pub reference: RequestResult,
+    pub candidate: RequestResult,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct RequestResult {
-    url: String,
+    pub url: String,
     #[serde(serialize_with = "serialization::custom_result")]
-    response: Result<Response, Error>,
+    pub response: Result<Response, Error>,
 }
 
 impl RequestResult {
@@ -58,10 +58,19 @@ impl Sample {
             candidate,
         }
     }
+
+    pub fn is_equal(&self) -> bool {
+        match (&self.reference.response, &self.candidate.response) {
+            // TODO: maybe compare a relevant subset of headers, e.g. "Location"
+            (Ok(a), Ok(b)) => a.status == b.status && a.body == b.body,
+            // if any of these fail, they are obviously different. If both fail that's strange, and we're going to report this
+            _ => false,
+        }
+    }
 }
 
 #[serde_as]
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, PartialEq)]
 #[serde(tag = "type", content = "value")]
 #[serde(rename_all = "lowercase")]
 pub enum Body {
@@ -87,7 +96,7 @@ impl Body {
     }
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, PartialEq)]
 pub struct Response {
     #[serde(with = "http_serde::status_code")]
     status: http::StatusCode,
@@ -99,10 +108,10 @@ pub struct Response {
 #[derive(Serialize)]
 pub struct Request {
     #[serde(with = "http_serde::method")]
-    method: http::Method,
+    pub method: http::Method,
     #[serde(with = "http_serde::uri")]
-    uri: http::Uri,
-    body: Body,
+    pub uri: http::Uri,
+    pub body: Body,
 }
 
 impl From<http::Request<Bytes>> for Request {
@@ -132,8 +141,9 @@ impl From<http::Response<Bytes>> for Response {
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod test {
-    use super::Body;
+    use super::{Body, Request, RequestResult, Response};
     use bytes::Bytes;
+    use http::{HeaderMap, HeaderValue};
 
     #[test]
     fn serialize_body_none() {
@@ -162,5 +172,72 @@ mod test {
         let actual = serde_json::to_string(&sample).unwrap();
 
         assert_eq!(actual, r#"{"type":"bytes","value":"AQID"}"#);
+    }
+
+    #[test]
+    fn test_do_not_compare_headers() {
+        let mut headers_a = HeaderMap::new();
+        headers_a.append("date", HeaderValue::from_static("now"));
+
+        let mut headers_b = HeaderMap::new();
+        headers_b.append(
+            "date",
+            HeaderValue::from_static("now plus a little bit later"),
+        );
+
+        let sample = super::Sample::new(
+            Request {
+                method: http::Method::GET,
+                uri: "http://localhost".parse().unwrap(),
+                body: Body::None,
+            },
+            RequestResult::new(
+                "http://localhost:3000".to_string(),
+                Ok(Response {
+                    status: http::StatusCode::OK,
+                    headers: headers_a,
+                    body: Body::Json(serde_json::json!({"c:": "d", "a": "b"})),
+                }),
+            ),
+            RequestResult::new(
+                "http://localhost:3001".to_string(),
+                Ok(Response {
+                    status: http::StatusCode::OK,
+                    headers: headers_b,
+                    body: Body::Json(serde_json::json!({"a": "b", "c:": "d"})),
+                }),
+            ),
+        );
+
+        assert!(sample.is_equal());
+    }
+
+    #[test]
+    fn test_do_compare_status_code() {
+        let sample = super::Sample::new(
+            Request {
+                method: http::Method::GET,
+                uri: "http://localhost".parse().unwrap(),
+                body: Body::None,
+            },
+            RequestResult::new(
+                "http://localhost:3000".to_string(),
+                Ok(Response {
+                    status: http::StatusCode::OK,
+                    headers: Default::default(),
+                    body: Body::Json(serde_json::json!({"c:": "d", "a": "b"})),
+                }),
+            ),
+            RequestResult::new(
+                "http://localhost:3000".to_string(),
+                Ok(Response {
+                    status: http::StatusCode::BAD_REQUEST,
+                    headers: Default::default(),
+                    body: Body::Json(serde_json::json!({"a": "b", "c:": "d"})),
+                }),
+            ),
+        );
+
+        assert!(!sample.is_equal());
     }
 }
