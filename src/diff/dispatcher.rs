@@ -1,28 +1,60 @@
 use crate::domain;
 use crate::http::model::{RequestContext, RequestMode};
+use crate::settings::Route;
 use bytes::Bytes;
 use http::uri::PathAndQuery;
 use tokio::sync::oneshot;
 
 /// the dispatcher decides where to send the request, i.e. who is reference, who is candidate, test anything at all
 pub struct Dispatcher {
-    candidate_base: String,
-    reference_base: String,
-    router: matchit::Router<bool>,
+    default_candidate_base: String,
+    default_reference_base: String,
+    router: matchit::Router<(Option<String>, Option<String>)>,
 }
 
 impl Dispatcher {
-    pub fn new(candidate_base: String, reference_base: String, routes: &[&str]) -> Self {
+    pub fn new(
+        default_reference_base: String,
+        default_candidate_base: String,
+        routes: &[Route],
+    ) -> Self {
         let mut router = matchit::Router::new();
 
-        for &r in routes {
-            router.insert(r, true).expect("invalid path provided");
+        for r in routes {
+            router
+                .insert(&r.path, (r.reference.clone(), r.candidate.clone()))
+                .expect("invalid path provided");
         }
 
         Self {
-            candidate_base,
-            reference_base,
+            default_candidate_base,
+            default_reference_base,
             router,
+        }
+    }
+
+    fn init_context_for_test(
+        &self,
+        request: &http::Request<Bytes>,
+        path_query: &str,
+        (reference, candidate): &(Option<String>, Option<String>),
+    ) -> RequestContext {
+        let (tx, rx) = oneshot::channel::<domain::Result>();
+
+        let reference_base = reference.as_ref().unwrap_or(&self.default_reference_base);
+        let candidate_base = candidate.as_ref().unwrap_or(&self.default_candidate_base);
+
+        let reference_uri = format!("{reference_base}{path_query}");
+        let candidate_uri = format!("{candidate_base}{path_query}");
+
+        RequestContext {
+            reference_uri,
+            tx: Some(tx),
+            mode: RequestMode::Experiment {
+                request: request.clone(),
+                candidate_uri,
+                rx,
+            },
         }
     }
 
@@ -31,32 +63,21 @@ impl Dispatcher {
     pub fn init_context(&self, req: &http::Request<Bytes>) -> RequestContext {
         let uri = req.uri();
 
-        let is_shadow_test = self.router.at(uri.path()).is_ok_and(|it| *it.value);
+        let parameters = self.router.at(uri.path()).ok();
+
         let path_query = uri
             .path_and_query()
             .map_or(uri.path(), PathAndQuery::as_str);
 
-        let reference_uri = format!("{}{}", self.reference_base, path_query);
-
-        if !is_shadow_test {
-            return RequestContext {
+        if let Some(m) = parameters {
+            self.init_context_for_test(req, path_query, m.value)
+        } else {
+            let reference_uri = format!("{}{}", self.default_reference_base, path_query);
+            RequestContext {
                 reference_uri,
                 tx: None,
                 mode: RequestMode::Proxy,
-            };
-        }
-
-        let candidate_uri = format!("{}{}", self.candidate_base, path_query);
-        let (tx, rx) = oneshot::channel::<domain::Result>();
-
-        RequestContext {
-            reference_uri,
-            tx: Some(tx),
-            mode: RequestMode::Experiment {
-                request: req.clone(),
-                candidate_uri,
-                rx,
-            },
+            }
         }
     }
 }
