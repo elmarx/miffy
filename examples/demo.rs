@@ -15,14 +15,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let app1 = Router::new().route(
         "/api/{value}",
         get(|Path(value): Path<i32>| async move {
-            Json(json!({ "msg": "A message", "result": value + 1 }))
+            Json(json!({ "msg": "I am the reference implementation", "result": value + 1 }))
         }),
     );
 
     let app2 = Router::new().route(
         "/api/{value}",
         get(|Path(value): Path<i32>| async move {
-            Json(json!({ "msg": "Another message", "result": value + 100 }))
+            Json(json!({ "msg": "I am the candidate", "result": value + 100 }))
         }),
     );
 

@@ -29,9 +29,9 @@ async fn main() -> anyhow::Result<()> {
     let publisher = Publisher::new(settings.kafka);
     let mirror = Mirror::new(publisher);
     let dispatcher = Dispatcher::new(
-        settings.candidate.to_string(),
         settings.reference.to_string(),
-        &["/api/{value}"],
+        settings.candidate.to_string(),
+        settings.routes.as_slice(),
     );
 
     let proxy = proxy::Service::new(dispatcher, mirror);
