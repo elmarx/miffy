@@ -1,5 +1,3 @@
-use crate::error::recover;
-use crate::proxy::Proxy;
 use hyper::server::conn::http1;
 use hyper_util::rt::TokioIo;
 use hyper_util::service::TowerToHyperService;
@@ -9,13 +7,13 @@ use tikv_jemallocator::Jemalloc;
 use tokio::net::TcpListener;
 use tower::ServiceBuilder;
 use tracing::error;
+use crate::proxy::error;
+use crate::proxy::error::recover;
 
-mod error;
-mod log;
 mod proxy;
 mod representation;
 mod sample;
-mod slurp;
+mod log;
 
 #[cfg(not(target_env = "msvc"))]
 #[global_allocator]
@@ -26,13 +24,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     log::init();
 
     let listener = TcpListener::bind("0.0.0.0:8080").await?;
-    let proxy = Arc::new(Proxy::new(
+    let proxy = Arc::new(proxy::Service::new(
         "http://127.0.0.1:3001".into(),
         "http://127.0.0.1:3000".into(),
         &["/api/{value}"],
     ));
 
-    let trace_layer = log::new_trace_layer();
+    let trace_layer = proxy::log::new_trace_layer();
 
     loop {
         let (stream, _) = listener.accept().await?;
@@ -45,9 +43,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             .service_fn(move |request| {
                 let proxy = proxy.clone();
                 async move {
-                    match slurp::request(request).await {
+                    match proxy::slurp::request(request).await {
                         Ok(request) => proxy.handle(request).await.or_else(recover),
-                        Err(e) => error::handle_incoming_request(&e),
+                        Err(e) => proxy::error::handle_incoming_request(&e),
                     }
                 }
             });

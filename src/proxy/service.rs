@@ -1,6 +1,5 @@
-use crate::error::Result;
+use error::Result;
 use crate::sample::Sample;
-use crate::slurp;
 use crate::{error, sample};
 use http::uri::PathAndQuery;
 use http_body_util::Full;
@@ -14,9 +13,10 @@ use std::time::Duration;
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::{Receiver, Sender};
 use tracing::debug;
+use crate::proxy::slurp;
 
 #[derive(Clone)]
-pub struct Proxy {
+pub struct Service {
     client: Client<HttpConnector, Full<Bytes>>,
     candidate_base: String,
     reference_base: String,
@@ -25,7 +25,7 @@ pub struct Proxy {
     topic: String,
 }
 
-impl Proxy {
+impl Service {
     pub(crate) fn new(candidate_base: String, reference_base: String, routes: &[&str]) -> Self {
         let mut router = matchit::Router::new();
 

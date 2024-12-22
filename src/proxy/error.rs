@@ -1,4 +1,3 @@
-use crate::error;
 use bytes::Bytes;
 use http::{Response, StatusCode};
 use http_body_util::Full;
@@ -6,6 +5,7 @@ use serde_json::json;
 use std::convert::Infallible;
 use thiserror::Error;
 use tokio::sync::oneshot::error::RecvError;
+use crate::proxy::error;
 
 pub type Result<T> = std::result::Result<T, Upstream>;
 
