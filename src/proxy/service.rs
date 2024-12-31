@@ -6,7 +6,6 @@ use crate::http::error;
 use http_body_util::Full;
 use hyper::body::Bytes;
 use hyper::{Request, Response};
-use hyper_util::client::legacy::connect::HttpConnector;
 
 pub struct Service {
     client: Client,
@@ -21,7 +20,7 @@ impl Service {
             client: hyper_util::client::legacy::Client::builder(
                 hyper_util::rt::TokioExecutor::new(),
             )
-            .build(HttpConnector::new()),
+            .build_http(),
             mirror,
         }
     }

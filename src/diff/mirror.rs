@@ -6,7 +6,6 @@ use crate::http::client::{Client, UpstreamExt};
 use crate::http::model::RequestMode;
 use bytes::Bytes;
 use http::Request;
-use hyper_util::client::legacy::connect::HttpConnector;
 use tokio::sync::oneshot::Receiver;
 use tracing::error;
 
@@ -23,7 +22,7 @@ impl Mirror {
             client: hyper_util::client::legacy::Client::builder(
                 hyper_util::rt::TokioExecutor::new(),
             )
-            .build(HttpConnector::new()),
+            .build_http(),
             publisher,
         }
     }
