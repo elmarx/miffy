@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 tokio = { version = "1.42.0", features = ["full"] }
 hyper = "1.5.1"
-hyper-util = { version = "0.1.10", features = ["server", "http1", "client", "client-legacy", "service"] }
+hyper-util = { version = "0.1.10", features = ["server", "http1", "client", "client-legacy", "service", "tokio"] }
 serde_json = "1.0.133"
 http-body-util = "0.1.2"
 matchit = "0.8.4"
