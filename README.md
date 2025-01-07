@@ -26,6 +26,7 @@ Required tools:
 
 ## Demo
 
+* prepare the config: copy `config.sample.toml` to `config.toml`
 * start the demo-servers: `cargo run --example demo`. This will start two servers listening to
   `localhost:3000` (the
   reference) and `localhost:3001` (the candidate) with one endpoint: `/api/{value}`.
@@ -34,6 +35,12 @@ Required tools:
 * send a request to a path under test: `curl http://localhost:8080/api/3`
 * send a request to any other path: `curl http://localhost:8080`
 * observe results in kafka: `kcat -b localhost:9092 -e -t miffy`
+
+# Configuration
+
+Miffy looks for a file `config.toml` in it's working-directory. You can point to a specific file via `MIFFY_CONFIG`
+
+See `config.default.toml` for an explanation of different values.
 
 # Benchmarking
 

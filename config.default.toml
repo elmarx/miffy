@@ -1,12 +1,23 @@
+# port to listen to
 port = 8080
+# format los as json
 log_json = false
 
+# default url for the reference
 reference = "http://127.0.0.1:3000"
+# default url for the candidate to test
 candidate = "http://127.0.0.1:3001"
 
-routes = []
+# routes to decide if miffy acts as a simple reverse-proxy or mirrors requests
+# miffy uses matchit under the hood, so see matchit-documentation for syntax etc.: https://docs.rs/matchit/latest/matchit/#routing-priority
+routes = [
+    # { path = "/api/{value}" }, # mirror requests matching this path to the candidate and publish differences
+    # { path = "/api/42", reference = "http://localhost:3001", candidate = "http://localhost:3000" }, # specify a different reference and cadidate for this specific path
+]
 
 [kafka]
+# kafka-topic to publish changes to (may also be set via MIFFY_KAFKA_TOPIC="xyz")
 topic = "miffy"
+# kafka-brokers to connect to (may also be set via MIFFY_KAFKA_BROKERS="broker-a:123,broker-b:123"
 brokers = ["localhost:9092"]
 
