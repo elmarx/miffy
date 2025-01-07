@@ -42,12 +42,20 @@ pub struct Route {
 
 impl Settings {
     pub(crate) fn emerge() -> Result<Settings, ConfigError> {
+        let config_file = std::env::var("MIFFY_CONFIG").unwrap_or("config.toml".to_string());
+
         let settings = Config::builder()
+            .set_default("port", 8080)?
             .set_default("log_json", false)?
-            .add_source(config::File::with_name("config.default.toml"))
-            .add_source(config::File::with_name("config.sample.toml"))
-            .add_source(config::File::with_name("config.toml"))
-            .add_source(Environment::with_prefix("MIFFY"))
+            .set_default("routes", "[]")?
+            .add_source(config::File::with_name(&config_file))
+            .add_source(
+                Environment::with_prefix("MIFFY")
+                    .separator("_")
+                    .list_separator(",")
+                    .try_parsing(true)
+                    .with_list_parse_key("kafka.brokers"),
+            )
             .build();
 
         settings?.try_deserialize::<Settings>()
