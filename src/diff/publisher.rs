@@ -12,9 +12,10 @@ pub struct Publisher {
 }
 
 impl Publisher {
-    pub fn new(config: Kafka) -> Self {
+    pub fn new(config: Kafka, properties: Vec<(String, String)>) -> Self {
         let mut cfg = ClientConfig::new();
         cfg.extend(config.properties.into_iter().map(|(k, v)| (k, v.into())));
+        cfg.extend(properties);
 
         let producer = cfg.create().expect("invalid kafka configuration");
 
