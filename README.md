@@ -45,7 +45,10 @@ Native libraries (required for [rdakafka](https://github.com/fede1024/rust-rdkaf
 
 Miffy looks for a file `config.toml` in it's working-directory. You can point to a specific file via `MIFFY_CONFIG`
 
-See `config.default.toml` for an explanation of different values.
+See `config.default.toml` for an explanation of different values. These values may be overriden via env-variable prefixed with `MIFFY_`.
+
+Miffy uses *rdkafka* internally and allows to set all its [properties](https://github.com/confluentinc/librdkafka/blob/master/CONFIGURATION.md), in `config.toml` section `[kafka]`.
+Since those values typically need to be set via environment variable (e.g. password for kafka, `sasl.password`), they may be set/overriden via `KAFKA_SASL_PASSWORD` etc.
 
 # Benchmarking
 

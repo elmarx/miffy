@@ -1,6 +1,7 @@
-use config::{Config, ConfigError, Environment};
-use serde::Deserialize;
 use std::collections::HashMap;
+
+use config::{ConfigError, Environment};
+use serde::Deserialize;
 
 /// type to accept all values allowed by rdkafka.
 /// rdkafka expects all properties as Into<String>, this enables to write numbers into toml without quotes
@@ -42,7 +43,7 @@ pub struct Kafka {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Settings {
+pub struct Config {
     pub kafka: Kafka,
 
     /// default reference URL to use
@@ -59,6 +60,12 @@ pub struct Settings {
     pub(crate) routes: Vec<Route>,
 }
 
+#[derive(Debug)]
+pub struct Setting {
+    pub config: Config,
+    pub kafka_properties: Vec<(String, String)>,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct Route {
     /// path in matchit-syntax (<https://docs.rs/matchit/latest/matchit/#parameters>). Names of parameters are irrelevant
@@ -71,11 +78,11 @@ pub struct Route {
     pub candidate: Option<String>,
 }
 
-impl Settings {
-    pub(crate) fn emerge() -> Result<Settings, ConfigError> {
+impl Setting {
+    pub(crate) fn emerge() -> Result<Setting, ConfigError> {
         let config_file = std::env::var("MIFFY_CONFIG").unwrap_or("config.toml".to_string());
 
-        let settings = Config::builder()
+        let settings = config::Config::builder()
             .set_default("port", 8080)?
             .set_default("log_json", false)?
             .set_default("routes", "[]")?
@@ -83,6 +90,59 @@ impl Settings {
             .add_source(Environment::with_prefix("MIFFY").separator("_"))
             .build();
 
-        settings?.try_deserialize::<Settings>()
+        let kafka_properties = kafka_from_env(std::env::vars());
+
+        settings?.try_deserialize::<Config>().map(|config| Setting {
+            config,
+            kafka_properties,
+        })
+    }
+}
+
+/// collect env-vars into kafka-properties
+/// e.g. turns `KAFKA_BOOTSTRAP_SERVERS` into `bootstrap.servers`
+fn kafka_from_env(env_vars: impl Iterator<Item = (String, String)>) -> Vec<(String, String)> {
+    env_vars
+        .filter_map(|(k, v)| {
+            k.strip_prefix("KAFKA_").map(|prop| {
+                (
+                    prop.replace('_', ".").to_lowercase().to_string(),
+                    v.to_string(),
+                )
+            })
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod test {
+    use super::kafka_from_env;
+
+    #[test]
+    fn test_kafka_from_env() {
+        let env_vars = vec![
+            ("XYZ".to_string(), "short".to_string()),
+            (
+                "KAFKA_BOOTSTRAP_SERVERS".to_string(),
+                "localhost:9092".to_string(),
+            ),
+            ("KAFKA_GROUP_ID".to_string(), "miffy".to_string()),
+            (
+                "KAFKA_SSL_CA_LOCATION".to_string(),
+                "/var/run/secrets/ca.pem".to_string(),
+            ),
+        ];
+
+        let actual = kafka_from_env(env_vars.into_iter());
+        let expected: Vec<_> = vec![
+            ("bootstrap.servers", "localhost:9092"),
+            ("group.id", "miffy"),
+            ("ssl.ca.location", "/var/run/secrets/ca.pem"),
+        ]
+        .into_iter()
+        .map(|(k, v)| (k.into(), v.into()))
+        .collect();
+
+        assert_eq!(actual, expected);
     }
 }

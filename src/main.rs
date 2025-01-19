@@ -1,7 +1,7 @@
+use crate::settings::Setting;
 use diff::dispatcher::Dispatcher;
 use diff::mirror::Mirror;
 use diff::publisher::Publisher;
-use settings::Settings;
 #[cfg(not(target_env = "msvc"))]
 use tikv_jemallocator::Jemalloc;
 use tracing::info;
@@ -20,23 +20,23 @@ static GLOBAL: Jemalloc = Jemalloc;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let settings = Settings::emerge()?;
+    let settings = Setting::emerge()?;
 
-    log::init(settings.log_json);
+    log::init(settings.config.log_json);
 
     info!("{settings:?}");
 
-    let publisher = Publisher::new(settings.kafka);
+    let publisher = Publisher::new(settings.config.kafka, settings.kafka_properties);
     let mirror = Mirror::new(publisher);
     let dispatcher = Dispatcher::new(
-        settings.reference.to_string(),
-        settings.candidate.to_string(),
-        settings.routes.as_slice(),
+        settings.config.reference.to_string(),
+        settings.config.candidate.to_string(),
+        settings.config.routes.as_slice(),
     );
 
     let proxy = proxy::Service::new(dispatcher, mirror);
 
-    proxy::run(settings.port, proxy).await?;
+    proxy::run(settings.config.port, proxy).await?;
 
     Ok(())
 }
