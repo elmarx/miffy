@@ -13,11 +13,10 @@ pub struct Publisher {
 
 impl Publisher {
     pub fn new(config: Kafka) -> Self {
-        let producer = ClientConfig::new()
-            .set("bootstrap.servers", config.brokers.join(","))
-            .set("message.timeout.ms", "5000")
-            .create()
-            .expect("invalid kafka configuration");
+        let mut cfg = ClientConfig::new();
+        cfg.extend(config.properties.into_iter().map(|(k, v)| (k, v.into())));
+
+        let producer = cfg.create().expect("invalid kafka configuration");
 
         Self {
             topic: config.topic,

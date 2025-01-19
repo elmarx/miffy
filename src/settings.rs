@@ -1,13 +1,44 @@
 use config::{Config, ConfigError, Environment};
 use serde::Deserialize;
+use std::collections::HashMap;
+
+/// type to accept all values allowed by rdkafka.
+/// rdkafka expects all properties as Into<String>, this enables to write numbers into toml without quotes
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum KafkaPropertyValue {
+    String(String),
+    Bool(bool),
+    Integer(i64),
+}
+
+impl From<&KafkaPropertyValue> for String {
+    fn from(v: &KafkaPropertyValue) -> Self {
+        match v {
+            KafkaPropertyValue::String(s) => s.clone(),
+            KafkaPropertyValue::Bool(b) => b.to_string(),
+            KafkaPropertyValue::Integer(i) => i.to_string(),
+        }
+    }
+}
+
+impl From<KafkaPropertyValue> for String {
+    fn from(v: KafkaPropertyValue) -> Self {
+        match v {
+            KafkaPropertyValue::String(s) => s,
+            KafkaPropertyValue::Bool(b) => b.to_string(),
+            KafkaPropertyValue::Integer(i) => i.to_string(),
+        }
+    }
+}
 
 #[derive(Debug, Deserialize)]
 pub struct Kafka {
-    /// brokers to connect to
-    pub brokers: Vec<String>,
-
-    /// topic where to publcish requests
+    /// topic where to publish requests to
     pub topic: String,
+
+    #[serde(flatten, default)]
+    pub properties: HashMap<String, KafkaPropertyValue>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -49,13 +80,7 @@ impl Settings {
             .set_default("log_json", false)?
             .set_default("routes", "[]")?
             .add_source(config::File::with_name(&config_file))
-            .add_source(
-                Environment::with_prefix("MIFFY")
-                    .separator("_")
-                    .list_separator(",")
-                    .try_parsing(true)
-                    .with_list_parse_key("kafka.brokers"),
-            )
+            .add_source(Environment::with_prefix("MIFFY").separator("_"))
             .build();
 
         settings?.try_deserialize::<Settings>()
