@@ -24,6 +24,11 @@ Required tools:
 - docker-compose
 - [kcat](https://github.com/edenhill/kcat)
 
+Native libraries (required for [rdakafka](https://github.com/fede1024/rust-rdkafka?tab=readme-ov-file#installation))
+
+- `libssl-dev`
+- `libsasl2-dev`
+
 ## Demo
 
 * prepare the config: copy `config.sample.toml` to `config.toml`

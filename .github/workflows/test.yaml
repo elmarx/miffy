@@ -9,6 +9,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
 
+      - name: install required native libs
+        run: sudo apt-get install libsasl2-dev
       - run: cargo fmt --check
       - run: cargo check --all-targets
       - run: cargo test --all-features
