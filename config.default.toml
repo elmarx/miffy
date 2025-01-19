@@ -18,6 +18,7 @@ routes = [
 [kafka]
 # kafka-topic to publish changes to (may also be set via MIFFY_KAFKA_TOPIC="xyz")
 topic = "miffy"
-# kafka-brokers to connect to (may also be set via MIFFY_KAFKA_BROKERS="broker-a:123,broker-b:123"
-brokers = ["localhost:9092"]
 
+# rdkafka-properties, see https://github.com/confluentinc/librdkafka/blob/master/CONFIGURATION.md#global-configuration-properties
+# kafka-brokers to connect to, comma-separated list
+"bootstrap.servers" = "localhost:9092"
