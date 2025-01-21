@@ -3,8 +3,16 @@ ARG REVISION
 WORKDIR /usr/src
 
 RUN apt-get update && apt-get install -y libssl-dev libsasl2-dev
+
 COPY Cargo.toml Cargo.lock ./
-RUN mkdir src && echo "fn main() {}" > src/main.rs
+
+# compile all dependencies with a dummy for improved caching
+RUN mkdir -p src/bin && \
+  echo "fn main() { println!(\"Dummy\"); }" > src/bin/dummy.rs && \
+  cargo build --release && \
+  rm -rf src
+
+# now compile the real code
 COPY src src
 RUN cargo install --locked --path . --root /usr/local
 
