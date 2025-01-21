@@ -1,6 +1,6 @@
+use super::util::header_ext::TxHeader;
 use crate::util::serialization;
 use bytes::Bytes;
-use http::HeaderValue;
 use serde::Serialize;
 use serde_json::Value;
 use serde_with::base64::Base64;
@@ -84,8 +84,9 @@ impl Body {
     fn new(headers: &http::HeaderMap, bytes: &Bytes) -> Self {
         if bytes.is_empty() {
             Self::None
-        } else if headers.get(http::header::CONTENT_TYPE)
-            == Some(&HeaderValue::from_static("application/json"))
+        } else if headers
+            .get(http::header::CONTENT_TYPE)
+            .is_some_and(|h| h.is_json())
         {
             serde_json::from_slice(bytes)
                 .map(Self::Json)
