@@ -1,4 +1,4 @@
-FROM rust:1.84.0 AS builder
+FROM rust:1.84.1 AS builder
 ARG REVISION
 WORKDIR /usr/src
 
