@@ -10,6 +10,8 @@ on:
       - .github/workflows/renovate.yaml
       - .github/renovate-global.json
       - .github/renovate.json5
+      - "Cargo.toml"
+      - "Cargo.lock"
 jobs:
   renovate:
     runs-on: ubuntu-latest
