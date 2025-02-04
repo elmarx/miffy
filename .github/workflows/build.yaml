@@ -74,4 +74,4 @@ jobs:
         with:
           package-name: "miffy"
           package-type: 'container'
-          min-versions-to-keep: 5
+          min-versions-to-keep: 20
