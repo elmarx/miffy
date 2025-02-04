@@ -42,11 +42,12 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
+            type=ref,event=branch,suffix=-${{ github.run_number }}
             type=sha
             type=raw,value=latest,enable={{ is_default_branch }}
-            type=raw,value=${{ steps.cargo_version.outputs.version }}+${{ github.run_number }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ steps.cargo_version.outputs.version }},enable={{ is_default_branch }}
-            type=semver,pattern={{version}},value=${{ steps.cargo_version.outputs.version }},enable={{ is_default_branch }}
+            type=raw,value=${{ steps.cargo_version.outputs.version }}-alpha.${{ github.run_number }}
+            # type=semver,pattern={{major}}.{{minor}},value=${{ steps.cargo_version.outputs.version }},enable={{ is_default_branch }}
+            # type=semver,pattern={{version}},value=${{ steps.cargo_version.outputs.version }},enable={{ is_default_branch }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
