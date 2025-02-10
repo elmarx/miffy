@@ -10,6 +10,7 @@ use util::log;
 mod diff;
 mod domain;
 mod http;
+mod management;
 mod proxy;
 mod settings;
 mod util;
@@ -36,7 +37,9 @@ async fn main() -> anyhow::Result<()> {
 
     let proxy = proxy::Service::new(dispatcher, mirror);
 
-    proxy::run(settings.config.port, proxy).await?;
+    tokio::task::spawn(proxy::run(settings.config.port, proxy));
+
+    management::run(settings.config.management_port).await?;
 
     Ok(())
 }

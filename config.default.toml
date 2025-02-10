@@ -1,5 +1,9 @@
 # port to listen to
 port = 8080
+
+# port for health-checks etc.
+management_port = 9000
+
 # format los as json
 log_json = false
 

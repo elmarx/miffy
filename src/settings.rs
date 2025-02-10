@@ -54,6 +54,8 @@ pub struct Config {
     /// port to listen to
     pub port: u16,
 
+    pub management_port: u16,
+
     /// whether to log in structured JSON format (otherwise: pretty human-readable
     pub log_json: bool,
 
@@ -84,6 +86,7 @@ impl Setting {
 
         let settings = config::Config::builder()
             .set_default("port", 8080)?
+            .set_default("management_port", 9000)?
             .set_default("log_json", false)?
             .set_default("routes", "[]")?
             .add_source(config::File::with_name(&config_file))
