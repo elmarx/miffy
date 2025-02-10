@@ -89,7 +89,7 @@ impl Body {
             Self::None
         } else if headers
             .get(http::header::CONTENT_TYPE)
-            .is_some_and(|h| h.is_json())
+            .is_some_and(TxHeader::is_json)
         {
             serde_json::from_slice(bytes)
                 .map(Self::Json)

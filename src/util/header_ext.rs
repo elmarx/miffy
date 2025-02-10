@@ -9,8 +9,7 @@ impl TxHeader for HeaderValue {
         self == HeaderValue::from_static("application/json")
             || (self
                 .to_str()
-                .map(|s| s.starts_with("application/") && s.ends_with("+json"))
-                .unwrap_or_default())
+                .is_ok_and(|s| s.starts_with("application/") && s.ends_with("+json")))
     }
 }
 
