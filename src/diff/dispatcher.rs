@@ -9,7 +9,7 @@ use tokio::sync::oneshot;
 pub struct Dispatcher {
     default_candidate_base: String,
     default_reference_base: String,
-    router: matchit::Router<(Option<String>, Option<String>)>,
+    router: matchit::Router<Route>,
 }
 
 impl Dispatcher {
@@ -22,7 +22,7 @@ impl Dispatcher {
 
         for r in routes {
             router
-                .insert(&r.path, (r.reference.clone(), r.candidate.clone()))
+                .insert(&r.path, r.clone())
                 .expect("invalid path provided");
         }
 
@@ -37,12 +37,12 @@ impl Dispatcher {
         &self,
         request: &http::Request<Bytes>,
         path_query: &str,
-        (reference, candidate): &(Option<String>, Option<String>),
+        r: &Route,
     ) -> RequestContext {
         let (tx, rx) = oneshot::channel::<domain::RequestResult>();
 
-        let reference_base = reference.as_ref().unwrap_or(&self.default_reference_base);
-        let candidate_base = candidate.as_ref().unwrap_or(&self.default_candidate_base);
+        let reference_base = r.reference.as_ref().unwrap_or(&self.default_reference_base);
+        let candidate_base = r.candidate.as_ref().unwrap_or(&self.default_candidate_base);
 
         let reference_uri = format!("{reference_base}{path_query}");
         let candidate_uri = format!("{candidate_base}{path_query}");
@@ -51,6 +51,7 @@ impl Dispatcher {
             reference_uri,
             tx: Some(tx),
             mode: RequestMode::Experiment {
+                path: r.path.clone(),
                 request: request.clone(),
                 candidate_uri,
                 rx,

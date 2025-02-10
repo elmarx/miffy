@@ -28,6 +28,7 @@ impl From<&crate::http::error::Upstream> for Error {
 /// sample represents a shadow-tested request, i.e. a mirrored request that may be analyzed further
 #[derive(Serialize)]
 pub struct Sample {
+    pub path: String,
     pub request: Request,
     pub reference: RequestResult,
     pub candidate: RequestResult,
@@ -48,11 +49,13 @@ impl RequestResult {
 
 impl Sample {
     pub(crate) fn new(
+        path: String,
         request: Request,
         reference: RequestResult,
         candidate: RequestResult,
     ) -> Self {
         Self {
+            path,
             request,
             reference,
             candidate,
@@ -187,6 +190,7 @@ mod test {
         );
 
         let sample = super::Sample::new(
+            "path".to_string(),
             Request {
                 method: http::Method::GET,
                 uri: "http://localhost".parse().unwrap(),
@@ -216,6 +220,7 @@ mod test {
     #[test]
     fn test_do_compare_status_code() {
         let sample = super::Sample::new(
+            "path".to_string(),
             Request {
                 method: http::Method::GET,
                 uri: "http://localhost".parse().unwrap(),

@@ -8,6 +8,7 @@ use tokio::sync::oneshot::{Receiver, Sender};
 pub enum RequestMode {
     Proxy,
     Experiment {
+        path: String,
         request: http::Request<Bytes>,
         candidate_uri: String,
         rx: Receiver<RequestResult>,

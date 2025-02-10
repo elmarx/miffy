@@ -38,8 +38,10 @@ impl Publisher {
 
         let delivery_status = self
             .producer
-            .send::<(), _, _>(
-                FutureRecord::to(&self.topic).payload(&message),
+            .send::<_, _, _>(
+                FutureRecord::to(&self.topic)
+                    .key(&sample.path)
+                    .payload(&message),
                 Duration::from_secs(0),
             )
             .await;

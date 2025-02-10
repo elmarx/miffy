@@ -66,7 +66,7 @@ pub struct Setting {
     pub kafka_properties: Vec<(String, String)>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Route {
     /// path in matchit-syntax (<https://docs.rs/matchit/latest/matchit/#parameters>). Names of parameters are irrelevant
     pub path: String,
