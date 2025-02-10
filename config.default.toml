@@ -1,3 +1,5 @@
+# this file is source as default into miffy at compile-time.
+
 # port to listen to
 port = 8080
 
@@ -7,10 +9,10 @@ management_port = 9000
 # format los as json
 log_json = false
 
-# default url for the reference
-reference = "http://127.0.0.1:3000"
-# default url for the candidate to test
-candidate = "http://127.0.0.1:3001"
+# default url for the reference (if not overriden by a route-specific reference)
+# reference = "http://127.0.0.1:3000"
+# default url for the candidate to test (dito)
+# candidate = "http://127.0.0.1:3001"
 
 # routes to decide if miffy acts as a simple reverse-proxy or mirrors requests
 # miffy uses matchit under the hood, so see matchit-documentation for syntax etc.: https://docs.rs/matchit/latest/matchit/#routing-priority

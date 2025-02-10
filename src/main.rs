@@ -1,4 +1,5 @@
 use crate::settings::Setting;
+use anyhow::Context;
 use diff::dispatcher::Dispatcher;
 use diff::mirror::Mirror;
 use diff::publisher::Publisher;
@@ -21,7 +22,7 @@ static GLOBAL: Jemalloc = Jemalloc;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let settings = Setting::emerge()?;
+    let settings = Setting::emerge().context("reading config")?;
 
     log::init(settings.config.log_json);
 

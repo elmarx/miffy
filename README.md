@@ -24,7 +24,8 @@ Required tools:
 - docker-compose
 - [kcat](https://github.com/edenhill/kcat)
 
-Native libraries (required for [rdakafka](https://github.com/fede1024/rust-rdkafka?tab=readme-ov-file#installation))
+Native libraries (required
+for [rdakafka](https://github.com/fede1024/rust-rdkafka?tab=readme-ov-file#installation))
 
 - `libssl-dev`
 - `libsasl2-dev`
@@ -43,15 +44,19 @@ Native libraries (required for [rdakafka](https://github.com/fede1024/rust-rdkaf
 
 # Configuration
 
-Miffy looks for a file `config.toml` in it's working-directory. You can point to a specific file via `MIFFY_CONFIG`
+Miffy looks for a file `config.toml` in it's working-directory, but you can point to a specific file
+via `MIFFY_CONFIG`-env-var.
 
-See `config.default.toml` for an explanation of different values. These values may be overriden via env-variable
-prefixed with `MIFFY_`.
+- get a working config by copying `config.sample.toml` to `config.toml`.
+- see `config.default.toml` for an explanation of different values and defaults.
+- all config-values values may be overriden via env-variable prefixed with `MIFFY_`.
 
 Miffy uses *rdkafka* internally and allows to set all
-its [properties](https://github.com/confluentinc/librdkafka/blob/master/CONFIGURATION.md), in `config.toml` section
+its [properties](https://github.com/confluentinc/librdkafka/blob/master/CONFIGURATION.md), in
+`config.toml` section
 `[kafka]`.
-Since those values typically need to be set via environment variable (e.g. password for kafka, `sasl.password`), they
+Since those values typically need to be set via environment variable (e.g. password for kafka,
+`sasl.password`), they
 may be set/overriden via `KAFKA_SASL_PASSWORD` etc.
 
 ## Deployment

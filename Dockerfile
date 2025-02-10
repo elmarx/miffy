@@ -13,6 +13,7 @@ RUN mkdir -p src/bin && \
   rm -rf src
 
 # now compile the real code
+COPY ./config.default.toml .
 COPY src src
 RUN cargo install --locked --path . --root /usr/local
 

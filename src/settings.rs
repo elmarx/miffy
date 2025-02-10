@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
-use config::{ConfigError, Environment};
+use config::{ConfigError, Environment, File, FileFormat};
 use serde::Deserialize;
+
+const DEFAULT_CONFIG: &str = include_str!("../config.default.toml");
 
 /// type to accept all values allowed by rdkafka.
 /// rdkafka expects all properties as Into<String>, this enables to write numbers into toml without quotes
@@ -85,10 +87,7 @@ impl Setting {
         let config_file = std::env::var("MIFFY_CONFIG").unwrap_or("config.toml".to_string());
 
         let settings = config::Config::builder()
-            .set_default("port", 8080)?
-            .set_default("management_port", 9000)?
-            .set_default("log_json", false)?
-            .set_default("routes", "[]")?
+            .add_source(File::from_str(DEFAULT_CONFIG, FileFormat::Toml))
             .add_source(config::File::with_name(&config_file))
             .add_source(Environment::with_prefix("MIFFY").separator("_"))
             .build();
