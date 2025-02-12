@@ -11,7 +11,7 @@ pub enum RequestMode {
         /// if given in config: custom key
         key: Option<String>,
         /// path of the route
-        path: String,
+        route: String,
         /// parameters as extracted from the route
         route_params: Vec<(String, String)>,
         request: http::Request<Bytes>,

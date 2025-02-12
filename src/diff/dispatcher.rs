@@ -68,7 +68,7 @@ impl Dispatcher {
             tx: Some(tx),
             mode: RequestMode::Experiment {
                 key: route_value.key.clone(),
-                path: route_value.path.clone(),
+                route: route_value.path.clone(),
                 route_params: params,
                 request: request.clone(),
                 candidate_uri,

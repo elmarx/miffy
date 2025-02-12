@@ -39,7 +39,7 @@ impl Mirror {
     pub async fn mirror(
         &self,
         key: Option<String>,
-        path: String,
+        route: String,
         route_params: Vec<(String, String)>,
         original_request: Request<Bytes>,
         candidate_uri: String,
@@ -57,15 +57,13 @@ impl Mirror {
         let response = domain::RequestResult::new(candidate_uri, response);
 
         let key = key.map_or_else(
-            || path.clone(),
+            || route.clone(),
             |key| build_key(key, route_params.as_slice()),
         );
 
         // once we have the response of the reference and the candidate, let the publisher process this sample
         let sample = Sample::new(
-            path,
-            route_params.into_iter().collect(),
-            original_request.into(),
+            domain::Request::new(original_request, route, route_params),
             reference,
             response,
         );
@@ -80,7 +78,7 @@ impl Mirror {
             RequestMode::Proxy => {}
             RequestMode::Experiment {
                 key,
-                path,
+                route,
                 route_params,
                 request,
                 candidate_uri,
@@ -90,7 +88,7 @@ impl Mirror {
                 tokio::spawn(async move {
                     // if this fails it just means the mirroring failed (for any reason). The actual request (to the reference) is not impacted
                     if let Err(e) = self_clone
-                        .mirror(key, path, route_params, request, candidate_uri, rx)
+                        .mirror(key, route, route_params, request, candidate_uri, rx)
                         .await
                     {
                         error!("internal error mirroring request: {e:?}.");

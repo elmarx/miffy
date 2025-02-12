@@ -29,8 +29,6 @@ impl From<&crate::http::error::Upstream> for Error {
 /// sample represents a shadow-tested request, i.e. a mirrored request that may be analyzed further
 #[derive(Serialize)]
 pub struct Sample {
-    pub path: String,
-    pub params: HashMap<String, String>,
     pub request: Request,
     pub reference: RequestResult,
     pub candidate: RequestResult,
@@ -51,15 +49,11 @@ impl RequestResult {
 
 impl Sample {
     pub(crate) fn new(
-        path: String,
-        params: HashMap<String, String>,
         request: Request,
         reference: RequestResult,
         candidate: RequestResult,
     ) -> Self {
         Self {
-            path,
-            params,
             request,
             reference,
             candidate,
@@ -119,16 +113,24 @@ pub struct Request {
     pub method: http::Method,
     #[serde(with = "http_serde::uri")]
     pub uri: http::Uri,
+    pub route: String,
+    pub params: HashMap<String, String>,
     pub body: Body,
 }
 
-impl From<http::Request<Bytes>> for Request {
-    fn from(value: http::Request<Bytes>) -> Self {
-        let body = Body::new(value.headers(), value.body());
+impl Request {
+    pub fn new(
+        request: http::Request<Bytes>,
+        route: String,
+        route_params: Vec<(String, String)>,
+    ) -> Self {
+        let body = Body::new(request.headers(), request.body());
 
         Self {
-            method: value.method().clone(),
-            uri: value.uri().clone(),
+            method: request.method().clone(),
+            uri: request.uri().clone(),
+            route,
+            params: route_params.into_iter().collect(),
             body,
         }
     }
@@ -194,11 +196,11 @@ mod test {
         );
 
         let sample = super::Sample::new(
-            "path".to_string(),
-            Default::default(),
             Request {
                 method: http::Method::GET,
                 uri: "http://localhost".parse().unwrap(),
+                route: "path".to_string(),
+                params: Default::default(),
                 body: Body::None,
             },
             RequestResult::new(
@@ -225,11 +227,11 @@ mod test {
     #[test]
     fn test_do_compare_status_code() {
         let sample = super::Sample::new(
-            "path".to_string(),
-            Default::default(),
             Request {
                 method: http::Method::GET,
                 uri: "http://localhost".parse().unwrap(),
+                route: "path".to_string(),
+                params: Default::default(),
                 body: Body::None,
             },
             RequestResult::new(
