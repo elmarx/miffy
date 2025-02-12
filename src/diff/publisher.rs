@@ -25,7 +25,7 @@ impl Publisher {
         }
     }
 
-    pub async fn publish(&self, sample: domain::Sample) {
+    pub async fn publish(&self, key: &str, sample: domain::Sample) {
         if sample.is_equal() {
             info!(
                 "request to {} {} equals reference from {} to, not sending message",
@@ -39,9 +39,7 @@ impl Publisher {
         let delivery_status = self
             .producer
             .send::<_, _, _>(
-                FutureRecord::to(&self.topic)
-                    .key(&sample.path)
-                    .payload(&message),
+                FutureRecord::to(&self.topic).key(key).payload(&message),
                 Duration::from_secs(0),
             )
             .await;

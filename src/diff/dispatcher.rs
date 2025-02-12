@@ -3,6 +3,7 @@ use crate::http::model::{RequestContext, RequestMode};
 use crate::settings::Route;
 use bytes::Bytes;
 use http::uri::PathAndQuery;
+use matchit::Match;
 use tokio::sync::oneshot;
 
 /// the dispatcher decides where to send the request, i.e. who is reference, who is candidate, test anything at all
@@ -33,16 +34,31 @@ impl Dispatcher {
         }
     }
 
-    fn init_context_for_test(
+    /// build the request-context with all data required to mirror traffic (and publish
+    fn init_context_for_experiment(
         &self,
         request: &http::Request<Bytes>,
         path_query: &str,
-        r: &Route,
+        matched_route: &Match<&Route>,
     ) -> RequestContext {
+        // remember: this runs on the main "thread", so do as little work as possible!
         let (tx, rx) = oneshot::channel::<domain::RequestResult>();
 
-        let reference_base = r.reference.as_ref().unwrap_or(&self.default_reference_base);
-        let candidate_base = r.candidate.as_ref().unwrap_or(&self.default_candidate_base);
+        let route_value = matched_route.value;
+        let params = matched_route
+            .params
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect();
+
+        let reference_base = route_value
+            .reference
+            .as_ref()
+            .unwrap_or(&self.default_reference_base);
+        let candidate_base = route_value
+            .candidate
+            .as_ref()
+            .unwrap_or(&self.default_candidate_base);
 
         let reference_uri = format!("{reference_base}{path_query}");
         let candidate_uri = format!("{candidate_base}{path_query}");
@@ -51,7 +67,9 @@ impl Dispatcher {
             reference_uri,
             tx: Some(tx),
             mode: RequestMode::Experiment {
-                path: r.path.clone(),
+                key: route_value.key.clone(),
+                path: route_value.path.clone(),
+                route_params: params,
                 request: request.clone(),
                 candidate_uri,
                 rx,
@@ -71,7 +89,7 @@ impl Dispatcher {
             .map_or(uri.path(), PathAndQuery::as_str);
 
         if let Some(m) = parameters {
-            self.init_context_for_test(req, path_query, m.value)
+            self.init_context_for_experiment(req, path_query, &m)
         } else {
             let reference_uri = format!("{}{}", self.default_reference_base, path_query);
             RequestContext {

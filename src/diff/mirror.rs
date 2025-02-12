@@ -9,6 +9,14 @@ use http::Request;
 use tokio::sync::oneshot::Receiver;
 use tracing::error;
 
+pub fn build_key(key: String, params: &[(String, String)]) -> String {
+    params
+        .iter()
+        .find(|(k, _)| k == &key)
+        .map(|(_, v)| v.to_string())
+        .unwrap_or(key)
+}
+
 /// a mirror will be initialized once per request
 #[derive(Clone)]
 pub struct Mirror {
@@ -30,7 +38,9 @@ impl Mirror {
     /// mirror the original request to the candidate and wait for the reference
     pub async fn mirror(
         &self,
+        key: Option<String>,
         path: String,
+        route_params: Vec<(String, String)>,
         original_request: Request<Bytes>,
         candidate_uri: String,
         reference_rx: Receiver<domain::RequestResult>,
@@ -46,9 +56,20 @@ impl Mirror {
         let response = response.map(Into::into).map_err(|e| (&e).into());
         let response = domain::RequestResult::new(candidate_uri, response);
 
+        let key = key.map_or_else(
+            || path.clone(),
+            |key| build_key(key, route_params.as_slice()),
+        );
+
         // once we have the response of the reference and the candidate, let the publisher process this sample
-        let sample = Sample::new(path, original_request.into(), reference, response);
-        self.publisher.publish(sample).await;
+        let sample = Sample::new(
+            path,
+            route_params.into_iter().collect(),
+            original_request.into(),
+            reference,
+            response,
+        );
+        self.publisher.publish(&key, sample).await;
 
         Ok(())
     }
@@ -58,7 +79,9 @@ impl Mirror {
         match mode {
             RequestMode::Proxy => {}
             RequestMode::Experiment {
+                key,
                 path,
+                route_params,
                 request,
                 candidate_uri,
                 rx,
@@ -66,7 +89,10 @@ impl Mirror {
                 let self_clone = self.clone();
                 tokio::spawn(async move {
                     // if this fails it just means the mirroring failed (for any reason). The actual request (to the reference) is not impacted
-                    if let Err(e) = self_clone.mirror(path, request, candidate_uri, rx).await {
+                    if let Err(e) = self_clone
+                        .mirror(key, path, route_params, request, candidate_uri, rx)
+                        .await
+                    {
                         error!("internal error mirroring request: {e:?}.");
                     }
                 });

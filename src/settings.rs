@@ -75,6 +75,9 @@ pub struct Route {
     /// path in matchit-syntax (<https://docs.rs/matchit/latest/matchit/#parameters>). Names of parameters are irrelevant
     pub path: String,
 
+    /// name of the param (from the route) to use as
+    pub key: Option<String>,
+
     /// optional reference URL to use instead of the default-url
     pub reference: Option<String>,
 

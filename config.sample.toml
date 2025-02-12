@@ -3,6 +3,10 @@ candidate = "http://127.0.0.1:3001"
 
 routes = [
     { path = "/api/{value}" },
+    # use a route-parameter for the kafka-key
+    { path = "/user/{id}", key = "id" },
+    # use a static key for the route
+    { path = "/problem", key = "static-name" },
     { path = "/api/13", candidate = "http://localhost:1337" },
     { path = "/api/42", reference = "http://localhost:3001", candidate = "http://localhost:3000" },
     { path = "/api/00", reference = "http://localhost:3000", candidate = "http://localhost:3000" },

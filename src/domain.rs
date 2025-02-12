@@ -5,6 +5,7 @@ use serde::Serialize;
 use serde_json::Value;
 use serde_with::base64::Base64;
 use serde_with::serde_as;
+use std::collections::HashMap;
 
 /// a simplified representation of technical errors that may be cloned, serialized etc.
 #[derive(Debug, Serialize, PartialEq)]
@@ -29,6 +30,7 @@ impl From<&crate::http::error::Upstream> for Error {
 #[derive(Serialize)]
 pub struct Sample {
     pub path: String,
+    pub params: HashMap<String, String>,
     pub request: Request,
     pub reference: RequestResult,
     pub candidate: RequestResult,
@@ -50,12 +52,14 @@ impl RequestResult {
 impl Sample {
     pub(crate) fn new(
         path: String,
+        params: HashMap<String, String>,
         request: Request,
         reference: RequestResult,
         candidate: RequestResult,
     ) -> Self {
         Self {
             path,
+            params,
             request,
             reference,
             candidate,
@@ -191,6 +195,7 @@ mod test {
 
         let sample = super::Sample::new(
             "path".to_string(),
+            Default::default(),
             Request {
                 method: http::Method::GET,
                 uri: "http://localhost".parse().unwrap(),
@@ -221,6 +226,7 @@ mod test {
     fn test_do_compare_status_code() {
         let sample = super::Sample::new(
             "path".to_string(),
+            Default::default(),
             Request {
                 method: http::Method::GET,
                 uri: "http://localhost".parse().unwrap(),
