@@ -88,6 +88,9 @@ impl Body {
         } else if headers
             .get(http::header::CONTENT_TYPE)
             .is_some_and(TxHeader::is_json)
+            || headers
+                .get(http::header::ACCEPT)
+                .is_some_and(TxHeader::is_json)
         {
             serde_json::from_slice(bytes)
                 .map(Self::Json)
