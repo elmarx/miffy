@@ -1,10 +1,10 @@
 [package]
 name = "miffy"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 authors = ["Elmar Athmer"]
 license = "MIT OR Apache-2.0"
-rust-version = "1.84"
+rust-version = "1.85"
 
 [dependencies]
 tokio = { version = "1.43.0", features = ["full"] }

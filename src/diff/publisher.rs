@@ -1,7 +1,7 @@
 use crate::domain;
 use crate::settings::Kafka;
-use rdkafka::producer::FutureRecord;
 use rdkafka::ClientConfig;
+use rdkafka::producer::FutureRecord;
 use std::time::Duration;
 use tracing::{debug, info};
 
