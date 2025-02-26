@@ -9,12 +9,14 @@ jobs:
       CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Install cargo-nextest
         uses: taiki-e/install-action@cargo-nextest
 
       - name: install required native libs
         run: sudo apt-get install libsasl2-dev
+
       - run: cargo fmt --check
       - run: cargo check --all-targets
       - name: Run Tests
