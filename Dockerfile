@@ -26,6 +26,5 @@ COPY --from=builder /usr/local/bin/miffy /usr/local/bin
 
 USER miffy
 WORKDIR /home/miffy
-COPY config.default.toml .
 
 CMD [ "miffy" ]
