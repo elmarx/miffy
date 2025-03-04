@@ -6,8 +6,8 @@ port = 8080
 # port for health-checks etc.
 management_port = 9000
 
-# format los as json
-log_json = false
+# format logs "pretty", readable by humans or as json
+logging = "human"
 
 # default url for the reference (if not overriden by a route-specific reference)
 # reference = "http://127.0.0.1:3000"

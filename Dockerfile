@@ -20,7 +20,7 @@ RUN cargo install --locked --path . --root /usr/local
 FROM debian:stable-slim
 
 RUN apt-get update && apt-get install -y libssl3 libsasl2-2
-ENV MIFFY_LOG_JSON=1
+ENV MIFFY_LOGGING=json
 RUN adduser --system miffy
 COPY --from=builder /usr/local/bin/miffy /usr/local/bin
 

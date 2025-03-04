@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::util::log;
 use config::{ConfigError, Environment, File, FileFormat};
 use serde::Deserialize;
 
@@ -58,10 +59,10 @@ pub struct Config {
 
     pub management_port: u16,
 
-    /// whether to log in structured JSON format (otherwise: pretty human-readable
-    pub log_json: bool,
+    /// format to log.
+    pub logging: log::Format,
 
-    pub(crate) routes: Vec<Route>,
+    pub routes: Vec<Route>,
 }
 
 #[derive(Debug)]
