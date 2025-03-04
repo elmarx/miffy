@@ -69,9 +69,3 @@ jobs:
       #          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
       #          subject-digest: ${{ steps.push.outputs.digest }}
       #          push-to-registry: true
-
-      - uses: actions/delete-package-versions@v5
-        with:
-          package-name: "miffy"
-          package-type: 'container'
-          min-versions-to-keep: 20
