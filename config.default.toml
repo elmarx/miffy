@@ -6,7 +6,7 @@ port = 8080
 # port for health-checks etc.
 management_port = 9000
 
-# format logs "pretty", readable by humans or as json
+# format logs "pretty" (readable by humans), as "json" or using google stackdriver-format: "stackdriver"
 logging = "human"
 
 # default url for the reference (if not overriden by a route-specific reference)
