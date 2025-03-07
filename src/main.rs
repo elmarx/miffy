@@ -11,6 +11,7 @@ use util::log;
 mod diff;
 mod domain;
 mod http;
+mod jaq;
 mod management;
 mod proxy;
 mod settings;
