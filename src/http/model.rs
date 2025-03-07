@@ -1,6 +1,9 @@
 use crate::domain;
+use crate::domain::RequestResult;
+use crate::util::jaq::JaqFilter;
 use bytes::Bytes;
 use http::Response;
+use std::sync::Arc;
 use tokio::sync::oneshot::{Receiver, Sender};
 
 /// type of the value sent over the channel
@@ -21,6 +24,8 @@ pub enum RequestMode {
         request: http::Request<Bytes>,
         candidate_uri: String,
         rx: Receiver<ChannelValue>,
+        reference_filter: Option<Arc<JaqFilter>>,
+        candidate_filter: Option<Arc<JaqFilter>>,
     },
 }
 

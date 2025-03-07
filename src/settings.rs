@@ -80,9 +80,11 @@ pub struct Route {
 
     /// optional reference URL to use instead of the default-url
     pub reference: Option<String>,
-
     /// optional candidate URL to use instead of the default-url
     pub candidate: Option<String>,
+
+    pub reference_filter: Option<String>,
+    pub candidate_filter: Option<String>,
 }
 
 impl Setting {
