@@ -4,8 +4,10 @@ use crate::domain;
 use crate::domain::Sample;
 use crate::http::client::{Client, UpstreamExt};
 use crate::http::model::{ChannelValue, RequestMode};
+use crate::model::Filter;
 use bytes::Bytes;
 use http::Request;
+use std::sync::Arc;
 use tokio::sync::oneshot::Receiver;
 use tracing::error;
 
@@ -44,6 +46,8 @@ impl Mirror {
         original_request: Request<Bytes>,
         candidate_uri: String,
         reference_rx: Receiver<ChannelValue>,
+        _reference_filter: Option<Arc<Filter>>,
+        _candidate_filter: Option<Arc<Filter>>,
     ) -> Result<(), Internal> {
         let response = self
             .client
@@ -84,12 +88,23 @@ impl Mirror {
                 request,
                 candidate_uri,
                 rx,
+                candidate_filter,
+                reference_filter,
             } => {
                 let self_clone = self.clone();
                 tokio::spawn(async move {
                     // if this fails it just means the mirroring failed (for any reason). The actual request (to the reference) is not impacted
                     if let Err(e) = self_clone
-                        .mirror(key, route, route_params, request, candidate_uri, rx)
+                        .mirror(
+                            key,
+                            route,
+                            route_params,
+                            request,
+                            candidate_uri,
+                            rx,
+                            reference_filter,
+                            candidate_filter,
+                        )
                         .await
                     {
                         error!("internal error mirroring request: {e:?}.");

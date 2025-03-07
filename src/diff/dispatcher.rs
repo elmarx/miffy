@@ -1,5 +1,7 @@
 use crate::http::model::{RequestContext, RequestMode};
-use crate::settings::Route;
+use crate::model::Route;
+use crate::settings::Route as ConfigRoute;
+use anyhow::Context;
 use bytes::Bytes;
 use http::uri::PathAndQuery;
 use matchit::Match;
@@ -16,21 +18,22 @@ impl Dispatcher {
     pub fn new(
         default_reference_base: String,
         default_candidate_base: String,
-        routes: &[Route],
-    ) -> Self {
+        routes: &[ConfigRoute],
+    ) -> anyhow::Result<Self> {
         let mut router = matchit::Router::new();
 
         for r in routes {
+            let route = r.try_into().context("invalid route path")?;
             router
-                .insert(&r.path, r.clone())
+                .insert(&r.path, route)
                 .expect("invalid path provided");
         }
 
-        Self {
+        Ok(Self {
             default_candidate_base,
             default_reference_base,
             router,
-        }
+        })
     }
 
     /// build the request-context with all data required to mirror traffic (and publish
@@ -51,11 +54,11 @@ impl Dispatcher {
             .collect();
 
         let reference_base = route_value
-            .reference
+            .reference_base
             .as_ref()
             .unwrap_or(&self.default_reference_base);
         let candidate_base = route_value
-            .candidate
+            .candidate_base
             .as_ref()
             .unwrap_or(&self.default_candidate_base);
 
@@ -72,6 +75,8 @@ impl Dispatcher {
                 request: request.clone(),
                 candidate_uri,
                 rx,
+                reference_filter: route_value.reference_filter.clone(),
+                candidate_filter: route_value.candidate_filter.clone(),
             },
         }
     }

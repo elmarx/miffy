@@ -13,6 +13,7 @@ mod domain;
 mod http;
 mod jaq;
 mod management;
+mod model;
 mod proxy;
 mod settings;
 mod util;
@@ -35,7 +36,8 @@ async fn main() -> anyhow::Result<()> {
         settings.config.reference.to_string(),
         settings.config.candidate.to_string(),
         settings.config.routes.as_slice(),
-    );
+    )
+    .context("creating dispatcher")?;
 
     let proxy = proxy::Service::new(dispatcher, mirror);
 

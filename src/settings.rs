@@ -79,11 +79,24 @@ pub struct Route {
     /// name of the param (from the route) to use as
     pub key: Option<String>,
 
-    /// optional reference URL to use instead of the default-url
-    pub reference: Option<String>,
+    /// optional settings for reference
+    pub reference: Option<Upstream>,
+    /// optional settings for candidate
+    pub candidate: Option<Upstream>,
+}
 
-    /// optional candidate URL to use instead of the default-url
-    pub candidate: Option<String>,
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub struct Upstream {
+    /// base-URL to use instead of the default-url (the path will be appended)
+    pub base: Option<String>,
+    /// JQ-filter to transform the response before comparison and publishing  
+    pub pre_transform: Option<String>,
+    /// JQ-filter to transform the response after comparison (i.e.: the original response will be used for comparison)
+    /// but before publishing.
+    pub post_transform: Option<String>,
+    /// JQ-filter to transform the response for comparison only. Use this to e.g. exclude debugging-information or sort the response
+    /// this will also  
+    pub canonicalize: Option<String>,
 }
 
 impl Setting {
@@ -105,6 +118,19 @@ impl Setting {
     }
 }
 
+#[cfg(test)]
+impl TryFrom<&str> for Config {
+    type Error = ConfigError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        config::Config::builder()
+            .add_source(File::from_str(DEFAULT_CONFIG, FileFormat::Toml))
+            .add_source(File::from_str(value, FileFormat::Toml))
+            .build()?
+            .try_deserialize()
+    }
+}
+
 /// collect env-vars into kafka-properties
 /// e.g. turns `KAFKA_BOOTSTRAP_SERVERS` into `bootstrap.servers`
 fn kafka_from_env(env_vars: impl Iterator<Item = (String, String)>) -> Vec<(String, String)> {
@@ -122,7 +148,7 @@ fn kafka_from_env(env_vars: impl Iterator<Item = (String, String)>) -> Vec<(Stri
 
 #[cfg(test)]
 mod test {
-    use super::kafka_from_env;
+    use super::{Config, Upstream, kafka_from_env};
 
     #[test]
     fn test_kafka_from_env() {
@@ -150,5 +176,30 @@ mod test {
         .collect();
 
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_full_upstream() {
+        let config = r#"
+        reference = "http://127.0.0.1:3000"
+        candidate = "http://127.0.0.1:3001" 
+
+        [[routes]]
+        path = "/api/v1/echo"
+        key = 'echo'
+        reference = { pre_transform = ".", post_transform = ".",  canonicalize = "."}
+        "#;
+
+        let actual = Config::try_from(config).expect("should be ok");
+        let route = &actual.routes[0];
+        assert_eq!(
+            route.reference,
+            Some(Upstream {
+                base: None,
+                pre_transform: Some(".".to_string()),
+                post_transform: Some(".".to_string()),
+                canonicalize: Some(".".to_string()),
+            })
+        )
     }
 }
