@@ -1,32 +1,32 @@
 [package]
 name = "miffy"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 authors = ["Elmar Athmer"]
 license = "MIT OR Apache-2.0"
-rust-version = "1.85"
+rust-version = "1.84"
 
 [dependencies]
 tokio = { version = "1.43.0", features = ["full"] }
-hyper = "1.6.0"
+hyper = "1.5.2"
 hyper-util = { version = "0.1.10", features = ["server", "http1", "client", "client-legacy", "service", "tokio"] }
-serde_json = "1.0.140"
+serde_json = "1.0.137"
 http-body-util = "0.1.2"
 matchit = "0.8.4"
 rdkafka = { version = "0.37.0", features = ["sasl", "ssl", "zstd"] }
 http = "1.2.0"
-serde = { version = "1.0.218", features = ["derive"] }
+serde = { version = "1.0.217", features = ["derive"] }
 http-serde = "2.1.1"
-bytes = { version = "1.10.0", features = ["serde"] }
+bytes = { version = "1.9.0", features = ["serde"] }
 serde_with = { version = "3.12.0", features = ["base64"] }
-thiserror = "2.0.12"
-strum = { version = "0.27.1", features = ["derive"] }
+thiserror = "2.0.11"
+strum = { version = "0.26.3", features = ["derive"] }
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "json"] }
 tracing = "0.1.41"
 tower-http = { version = "0.6.2", features = ["trace"] }
 tower = { version = "0.5.2", features = ["util"] }
-config = { version = "0.15.8", default-features = false, features = ["toml", "convert-case"] }
-anyhow = "1.0.97"
+config = { version = "0.15.6", default-features = false, features = ["toml", "convert-case"] }
+anyhow = "1.0.95"
 
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
 tikv-jemallocator = "0.6"
