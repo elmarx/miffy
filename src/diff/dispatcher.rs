@@ -1,4 +1,3 @@
-use crate::domain;
 use crate::http::model::{RequestContext, RequestMode};
 use crate::settings::Route;
 use bytes::Bytes;
@@ -42,7 +41,7 @@ impl Dispatcher {
         matched_route: &Match<&Route>,
     ) -> RequestContext {
         // remember: this runs on the main "thread", so do as little work as possible!
-        let (tx, rx) = oneshot::channel::<domain::RequestResult>();
+        let (tx, rx) = oneshot::channel();
 
         let route_value = matched_route.value;
         let params = matched_route

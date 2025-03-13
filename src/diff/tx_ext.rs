@@ -1,5 +1,5 @@
-use crate::domain::RequestResult;
 use crate::http::error;
+use crate::http::model::ChannelValue;
 use bytes::Bytes;
 use http::Response;
 use tokio::sync::oneshot::Sender;
@@ -12,18 +12,15 @@ pub trait TxExt {
     fn send_reference(self, url: String, response: &Result<Response<Bytes>, error::Upstream>);
 }
 
-impl TxExt for Option<Sender<RequestResult>> {
+impl TxExt for Option<Sender<ChannelValue>> {
     fn send_reference(self, url: String, response: &Result<Response<Bytes>, error::Upstream>) {
         if let Some(tx) = self {
-            // turn into a domain::Result before sending over for comparison
-            let response = (response)
-                .as_ref()
-                .map(|r| r.clone().into())
-                .map_err(Into::into);
+            let response = match response {
+                Ok(r) => Ok(r.clone()),
+                Err(e) => Err(e.into()),
+            };
 
-            let request_result = RequestResult::new(url, response);
-
-            if let Err(e) = tx.send(request_result) {
+            if let Err(e) = tx.send((url, response)) {
                 // sending over the response failed, that's a shame, but it just means testing failed, we can still successfully respond to the client
                 error!("error sending response to shadow-test: {e:?}");
             }

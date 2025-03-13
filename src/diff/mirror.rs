@@ -3,7 +3,7 @@ use crate::diff::publisher::Publisher;
 use crate::domain;
 use crate::domain::Sample;
 use crate::http::client::{Client, UpstreamExt};
-use crate::http::model::RequestMode;
+use crate::http::model::{ChannelValue, RequestMode};
 use bytes::Bytes;
 use http::Request;
 use tokio::sync::oneshot::Receiver;
@@ -43,7 +43,7 @@ impl Mirror {
         route_params: Vec<(String, String)>,
         original_request: Request<Bytes>,
         candidate_uri: String,
-        reference_rx: Receiver<domain::RequestResult>,
+        reference_rx: Receiver<ChannelValue>,
     ) -> Result<(), Internal> {
         let response = self
             .client
@@ -51,7 +51,8 @@ impl Mirror {
             .await;
 
         // if the sender is dropped, this will receive a RecvError, we're just logging an error then
-        let reference = reference_rx.await?;
+        let (reference_uri, reference_res) = reference_rx.await?;
+        let reference = domain::RequestResult::new(reference_uri, reference_res.map(Into::into));
 
         let response = response.map(Into::into).map_err(|e| (&e).into());
         let response = domain::RequestResult::new(candidate_uri, response);
