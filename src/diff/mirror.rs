@@ -4,7 +4,7 @@ use crate::domain;
 use crate::domain::Sample;
 use crate::http::client::{Client, UpstreamExt};
 use crate::http::model::{Experiment, RequestMode};
-use tracing::error;
+use tracing::{error, info};
 
 pub fn build_key(key: String, params: &[(String, String)]) -> String {
     params
@@ -46,6 +46,17 @@ impl Mirror {
         let response = response.map(Into::into).map_err(|e| (&e).into());
         let response = domain::RequestResult::new(xp.candidate_uri, response);
 
+        // TODO: what to do if there are filters defined and the response is not JSON?
+        // TODO: what to do if the filter fails?
+
+        // TODO: execute the pre-filter here
+
+        // TODO: normalize and compare the responses (i.e.: probably custom "equal" function)
+        // TODO: if not equal:
+        // TODO: - execute the post-filter
+        // TODO: - build the Sample (or let the publisher build it…)
+        // TODO: - publish
+
         let key = xp.key.map_or_else(
             || xp.route.clone(),
             |key| build_key(key, xp.route_params.as_slice()),
@@ -57,7 +68,15 @@ impl Mirror {
             reference,
             response,
         );
-        self.publisher.publish(&key, sample).await;
+
+        if !sample.is_equal() {
+            info!(
+                "request to {} {} equals reference from {} to, not sending message",
+                sample.request.method, sample.candidate.url, sample.reference.url
+            );
+        } else {
+            self.publisher.publish(&key, sample).await;
+        }
 
         Ok(())
     }
