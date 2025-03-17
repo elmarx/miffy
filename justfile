@@ -1,3 +1,10 @@
+# run tests/checks that are also run by github actions
+ci:
+    cargo fmt --all -- --check
+    cargo check --tests --examples
+    cargo nextest run
+    cargo clippy -- -D warnings
+
 bench: bench_reference bench_miffy_proxy bench_miffy_mirror
 
 bench_miffy_proxy:
