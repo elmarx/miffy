@@ -1,4 +1,4 @@
-use crate::http::model::{RequestContext, RequestMode};
+use crate::http::model::{Experiment, RequestContext, RequestMode};
 use crate::model::Route;
 use crate::settings::Route as ConfigRoute;
 use anyhow::Context;
@@ -68,16 +68,16 @@ impl Dispatcher {
         RequestContext {
             reference_uri,
             tx: Some(tx),
-            mode: RequestMode::Experiment {
+            mode: RequestMode::Experiment(Experiment {
                 key: route_value.key.clone(),
                 route: route_value.path.clone(),
                 route_params: params,
-                request: request.clone(),
+                original_request: request.clone(),
                 candidate_uri,
                 rx,
                 reference_filter: route_value.reference_filter.clone(),
                 candidate_filter: route_value.candidate_filter.clone(),
-            },
+            }),
         }
     }
 

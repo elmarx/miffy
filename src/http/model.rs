@@ -13,19 +13,24 @@ pub type ChannelValue = (String, Result<Response<Bytes>, domain::Error>);
 /// Either it's an experiment, or simple proxy
 pub enum RequestMode {
     Proxy,
-    Experiment {
-        /// if given in config: custom key
-        key: Option<String>,
-        /// path of the route
-        route: String,
-        /// parameters as extracted from the route
-        route_params: Vec<(String, String)>,
-        request: http::Request<Bytes>,
-        candidate_uri: String,
-        rx: Receiver<ChannelValue>,
-        reference_filter: Option<Arc<Filter>>,
-        candidate_filter: Option<Arc<Filter>>,
-    },
+    Experiment(Experiment),
+}
+
+/// parameters to mirror the request, i.e. conduct the experiment
+pub struct Experiment {
+    /// if given in config: custom key
+    pub key: Option<String>,
+    /// path of the route
+    pub route: String,
+    /// parameters as extracted from the route
+    pub route_params: Vec<(String, String)>,
+    pub original_request: http::Request<Bytes>,
+    pub candidate_uri: String,
+    pub rx: Receiver<ChannelValue>,
+    #[expect(dead_code)]
+    pub reference_filter: Option<Arc<Filter>>,
+    #[expect(dead_code)]
+    pub candidate_filter: Option<Arc<Filter>>,
 }
 
 /// context for a request: the (live/reference) upstream uri to use, the mode, and an optional sender to send results to

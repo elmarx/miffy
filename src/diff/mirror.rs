@@ -3,12 +3,7 @@ use crate::diff::publisher::Publisher;
 use crate::domain;
 use crate::domain::Sample;
 use crate::http::client::{Client, UpstreamExt};
-use crate::http::model::{ChannelValue, RequestMode};
-use crate::model::Filter;
-use bytes::Bytes;
-use http::Request;
-use std::sync::Arc;
-use tokio::sync::oneshot::Receiver;
+use crate::http::model::{Experiment, RequestMode};
 use tracing::error;
 
 pub fn build_key(key: String, params: &[(String, String)]) -> String {
@@ -38,37 +33,27 @@ impl Mirror {
     }
 
     /// mirror the original request to the candidate and wait for the reference
-    pub async fn mirror(
-        &self,
-        key: Option<String>,
-        route: String,
-        route_params: Vec<(String, String)>,
-        original_request: Request<Bytes>,
-        candidate_uri: String,
-        reference_rx: Receiver<ChannelValue>,
-        _reference_filter: Option<Arc<Filter>>,
-        _candidate_filter: Option<Arc<Filter>>,
-    ) -> Result<(), Internal> {
+    pub async fn mirror(&self, xp: Experiment) -> Result<(), Internal> {
         let response = self
             .client
-            .upstream(original_request.clone(), &candidate_uri)
+            .upstream(xp.original_request.clone(), &xp.candidate_uri)
             .await;
 
         // if the sender is dropped, this will receive a RecvError, we're just logging an error then
-        let (reference_uri, reference_res) = reference_rx.await?;
+        let (reference_uri, reference_res) = xp.rx.await?;
         let reference = domain::RequestResult::new(reference_uri, reference_res.map(Into::into));
 
         let response = response.map(Into::into).map_err(|e| (&e).into());
-        let response = domain::RequestResult::new(candidate_uri, response);
+        let response = domain::RequestResult::new(xp.candidate_uri, response);
 
-        let key = key.map_or_else(
-            || route.clone(),
-            |key| build_key(key, route_params.as_slice()),
+        let key = xp.key.map_or_else(
+            || xp.route.clone(),
+            |key| build_key(key, xp.route_params.as_slice()),
         );
 
         // once we have the response of the reference and the candidate, let the publisher process this sample
         let sample = Sample::new(
-            domain::Request::new(&original_request, route, route_params),
+            domain::Request::new(&xp.original_request, xp.route, xp.route_params),
             reference,
             response,
         );
@@ -81,32 +66,11 @@ impl Mirror {
     pub fn spawn(&self, mode: RequestMode) {
         match mode {
             RequestMode::Proxy => {}
-            RequestMode::Experiment {
-                key,
-                route,
-                route_params,
-                request,
-                candidate_uri,
-                rx,
-                candidate_filter,
-                reference_filter,
-            } => {
+            RequestMode::Experiment(xp) => {
                 let self_clone = self.clone();
                 tokio::spawn(async move {
                     // if this fails it just means the mirroring failed (for any reason). The actual request (to the reference) is not impacted
-                    if let Err(e) = self_clone
-                        .mirror(
-                            key,
-                            route,
-                            route_params,
-                            request,
-                            candidate_uri,
-                            rx,
-                            reference_filter,
-                            candidate_filter,
-                        )
-                        .await
-                    {
+                    if let Err(e) = self_clone.mirror(xp).await {
                         error!("internal error mirroring request: {e:?}.");
                     }
                 });
