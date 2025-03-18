@@ -1,3 +1,4 @@
+use google_cloud_metadata::on_gce;
 use serde::Deserialize;
 use tracing_subscriber::filter::{EnvFilter, LevelFilter};
 #[cfg(feature = "gcloud")]
@@ -19,7 +20,7 @@ pub enum Format {
 }
 
 /// initialize the tracing subscriber.
-pub fn init(format: &Format) {
+pub async fn init(format: &Format) {
     let env_filter = EnvFilter::builder()
         .with_default_directive(LevelFilter::INFO.into())
         .from_env_lossy();
