@@ -8,7 +8,7 @@ rust-version = "1.85"
 
 [features]
 # google-cloud support: GKE metadata detection, stackdrive-logging support
-gcloud = ["dep:tracing-stackdriver"]
+gcloud = ["dep:tracing-stackdriver", "dep:tracing-opentelemetry"]
 default = ["gcloud"]
 
 [dependencies]
@@ -32,7 +32,8 @@ tower-http = { version = "0.6.2", features = ["trace"] }
 tower = { version = "0.5.2", features = ["util"] }
 config = { version = "0.15.11", default-features = false, features = ["toml", "convert-case"] }
 anyhow = "1.0.97"
-tracing-stackdriver = { version = "0.10.0", features = ["http", "tracing-opentelemetry"], optional = true }
+tracing-stackdriver = { version = "0.10.0", features = ["http", "opentelemetry"], optional = true }
+tracing-opentelemetry = { version = "0.29.0", optional = true }
 
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
 tikv-jemallocator = "0.6"

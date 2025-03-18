@@ -24,7 +24,7 @@ static GLOBAL: Jemalloc = Jemalloc;
 async fn main() -> anyhow::Result<()> {
     let settings = Setting::emerge().context("reading config")?;
 
-    log::init(&settings.config.logging);
+    log::init(&settings.config.logging).await;
 
     info!("{settings:?}");
 
