@@ -1,4 +1,5 @@
 use super::util::header_ext::TxHeader;
+use crate::http::error;
 use crate::util::serialization;
 use bytes::Bytes;
 use serde::Serialize;
@@ -16,12 +17,12 @@ pub enum Error {
     Body,
 }
 
-impl From<&crate::http::error::Upstream> for Error {
-    fn from(value: &crate::http::error::Upstream) -> Self {
+impl From<&error::Upstream> for Error {
+    fn from(value: &error::Upstream) -> Self {
         match value {
-            crate::http::error::Upstream::InvalidUri(_) => Error::Uri,
-            crate::http::error::Upstream::Request(_) => Error::Request,
-            crate::http::error::Upstream::ReadBody(_) => Error::Body,
+            error::Upstream::InvalidUri(_) => Error::Uri,
+            error::Upstream::Request(_) => Error::Request,
+            error::Upstream::ReadBody(_) => Error::Body,
         }
     }
 }
@@ -123,7 +124,7 @@ pub struct Request {
 
 impl Request {
     pub fn new(
-        request: http::Request<Bytes>,
+        request: &http::Request<Bytes>,
         route: String,
         route_params: Vec<(String, String)>,
     ) -> Self {

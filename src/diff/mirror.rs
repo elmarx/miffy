@@ -64,7 +64,7 @@ impl Mirror {
 
         // once we have the response of the reference and the candidate, let the publisher process this sample
         let sample = Sample::new(
-            domain::Request::new(original_request, route, route_params),
+            domain::Request::new(&original_request, route, route_params),
             reference,
             response,
         );

@@ -21,6 +21,7 @@ pub async fn run(management_port: u16) -> tokio::io::Result<()> {
         let io = TokioIo::new(stream);
 
         let svc = ServiceBuilder::new().service_fn(move |request: Request<Incoming>| async move {
+            #[expect(clippy::single_match_else)]
             let response = match (request.method(), request.uri().path()) {
                 (&Method::GET, "/healthz") => {
                     Response::new(Full::new(Bytes::from(r#"{"status": "healthy"}"#)))
