@@ -1,4 +1,5 @@
 use crate::diff::error::Internal;
+use crate::diff::jaq::transform_a;
 use crate::diff::publisher::Publisher;
 use crate::domain;
 use crate::domain::Sample;
@@ -45,6 +46,11 @@ impl Mirror {
 
         let response = response.map(Into::into).map_err(|e| (&e).into());
         let response = domain::RequestResult::new(xp.candidate_uri, response);
+
+        let f = match (xp.reference_filter) {
+            Some(f) => transform_a(f.pre.as_ref(), response),
+            _ => todo!(),
+        };
 
         // TODO: what to do if there are filters defined and the response is not JSON?
         // TODO: what to do if the filter fails?

@@ -72,7 +72,7 @@ impl Sample {
 }
 
 #[serde_as]
-#[derive(Serialize, Debug, PartialEq)]
+#[derive(Serialize, Debug, PartialEq, Clone)]
 #[serde(tag = "type", content = "value")]
 #[serde(rename_all = "lowercase")]
 pub enum Body {
@@ -105,10 +105,10 @@ impl Body {
 #[derive(Serialize, Debug, PartialEq)]
 pub struct Response {
     #[serde(with = "http_serde::status_code")]
-    status: http::StatusCode,
+    pub status: http::StatusCode,
     #[serde(with = "http_serde::header_map")]
-    headers: http::HeaderMap,
-    body: Body,
+    pub headers: http::HeaderMap,
+    pub body: Body,
 }
 
 #[derive(Serialize)]
@@ -135,6 +135,16 @@ impl Request {
             uri: request.uri().clone(),
             route,
             params: route_params.into_iter().collect(),
+            body,
+        }
+    }
+}
+
+impl Response {
+    pub fn new(status: http::StatusCode, headers: http::HeaderMap, body: Body) -> Self {
+        Self {
+            status,
+            headers,
             body,
         }
     }
