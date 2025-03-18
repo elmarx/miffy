@@ -2,6 +2,7 @@
 ci:
     cargo fmt --all -- --check
     cargo check --tests --examples
+    cargo check --all-targets --no-default-features
     cargo nextest run
     cargo clippy -- -D warnings
 
