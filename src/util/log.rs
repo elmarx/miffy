@@ -1,6 +1,8 @@
 use serde::Deserialize;
 use tracing_subscriber::filter::{EnvFilter, LevelFilter};
+#[cfg(feature = "gcloud")]
 use tracing_subscriber::layer::SubscriberExt;
+#[cfg(feature = "gcloud")]
 use tracing_subscriber::util::SubscriberInitExt;
 
 #[derive(Deserialize, Debug)]
@@ -12,6 +14,7 @@ pub enum Format {
     Human,
 
     /// google cloud compatible structured logging: <https://cloud.google.com/logging/docs/structured-logging>
+    #[cfg(feature = "gcloud")]
     Stackdriver,
 }
 
@@ -30,6 +33,7 @@ pub fn init(format: &Format) {
             .pretty()
             .with_env_filter(env_filter)
             .init(),
+        #[cfg(feature = "gcloud")]
         Format::Stackdriver => {
             let stackdriver = tracing_stackdriver::layer();
             tracing_subscriber::registry()
