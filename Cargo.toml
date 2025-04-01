@@ -5,6 +5,7 @@ edition = "2024"
 authors = ["Elmar Athmer"]
 license = "MIT OR Apache-2.0"
 rust-version = "1.85"
+description = "A shadow-testing proxy: Send requests to a \"reference\" implementation, send the request to a \"candidate\" implementation, always respond with the \"reference\" implementation and log/publish both responses if they are not equal."
 
 [features]
 # google-cloud support: GKE metadata detection, stackdrive-logging support

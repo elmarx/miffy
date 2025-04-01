@@ -2,8 +2,7 @@
 
 My diffy.
 
-A shadow-testing proxy: Send requests to a "*reference*" implementation, send the request to a "
-*candidate*"
+A shadow-testing proxy: Send requests to a "*reference*" implementation, send the request to a "*candidate*"
 implementation, always respond with the "*reference*" implementation and log/publish both responses
 if they are not
 equal.
