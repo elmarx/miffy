@@ -40,6 +40,8 @@ tikv-jemallocator = "0.6"
 
 [dev-dependencies]
 axum = { version = "0.8.1", features = ["macros"] }
+axum-extra = { version = "0.10.1", features = ["typed-header"] }
+headers = { version = "0.4.0" }
 
 [lints.clippy]
 unwrap_used = { level = "deny" }

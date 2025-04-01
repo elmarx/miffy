@@ -2,12 +2,15 @@ use crate::diff::error::Internal;
 use crate::diff::publisher::Publisher;
 use crate::domain;
 use crate::domain::Sample;
+use crate::http::SHADOW_TEST_HEADER;
 use crate::http::client::{Client, UpstreamExt};
 use crate::http::model::{ChannelValue, RequestMode};
 use bytes::Bytes;
-use http::Request;
+use http::{HeaderValue, Request};
 use tokio::sync::oneshot::Receiver;
 use tracing::error;
+
+const SHADOW_TEST_ROLE: HeaderValue = HeaderValue::from_static("candidate");
 
 pub fn build_key(key: String, params: &[(String, String)]) -> String {
     params
@@ -45,6 +48,11 @@ impl Mirror {
         candidate_uri: String,
         reference_rx: Receiver<ChannelValue>,
     ) -> Result<(), Internal> {
+        let mut request = original_request.clone();
+        request
+            .headers_mut()
+            .insert(SHADOW_TEST_HEADER, SHADOW_TEST_ROLE);
+
         let response = self
             .client
             .upstream(original_request.clone(), &candidate_uri)

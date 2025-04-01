@@ -65,6 +65,19 @@ Miffy provides a separate management-port (default: **9000**).
 
 Currently, only a health-endpoint `/healthz` is available.
 
+## Headers
+
+Sometimes services need to know if they take part in shadow-testing and also which role they play. E.g. "candidates"
+could still run in some dry-run mode where they not execute any side effects etc.
+
+Miffy therefore always sends a header name `X-Shadow-Test-Role`:
+
+- `candidate` — the service is the candidate for the current request
+- `reference` — the service is the reference for the current request
+- `upstream` — there is no experiment configured for the current request/route, so the service is just used as upstream
+
+Apart from that, miffy does not touch/change/add/remove any headers.
+
 # Benchmarking
 
 To estimate the rough overhead added by miffy, there are [just](https://just.systems/) recipes to
