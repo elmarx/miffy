@@ -2,7 +2,7 @@ FROM rust:1.86.0 AS builder
 ARG REVISION
 WORKDIR /usr/src
 
-RUN apt-get update && apt-get install -y libssl-dev libsasl2-dev
+RUN apt-get update && apt-get install -y libssl-dev libsasl2-dev clang
 
 COPY Cargo.toml Cargo.lock ./
 
