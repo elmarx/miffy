@@ -18,7 +18,7 @@ enum ShadowTestRole {
     #[strum(ascii_case_insensitive)]
     Candidate,
     #[strum(ascii_case_insensitive)]
-    Proxy,
+    Upstream,
 }
 static SHADOW_TEST_HEADER: HeaderName = HeaderName::from_static("x-shadow-test-role");
 
