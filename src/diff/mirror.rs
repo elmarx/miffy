@@ -53,10 +53,7 @@ impl Mirror {
             .headers_mut()
             .insert(SHADOW_TEST_HEADER, SHADOW_TEST_ROLE);
 
-        let response = self
-            .client
-            .upstream(original_request.clone(), &candidate_uri)
-            .await;
+        let response = self.client.upstream(request, &candidate_uri).await;
 
         // if the sender is dropped, this will receive a RecvError, we're just logging an error then
         let (reference_uri, reference_res) = reference_rx.await?;
