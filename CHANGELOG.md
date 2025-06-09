@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2](https://github.com/elmarx/miffy/compare/v1.0.1...v1.0.2) - 2025-06-09
+
+### Other
+
+- *(deps)* update renovatebot/github-action action to v42.0.5
+- *(deps)* update apache/kafka docker tag to v3.9.1
+- *(deps)* update renovatebot/github-action action to v42.0.4
+
 ## [1.0.1](https://github.com/elmarx/miffy/compare/v1.0.0...v1.0.1) - 2025-05-19
 
 ### Fixed
