@@ -29,7 +29,7 @@ thiserror = "2.0.12"
 strum = { version = "0.27.2", features = ["derive"] }
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "json"] }
 tracing = "0.1.41"
-tower-http = { version = "0.6.6", features = ["trace"] }
+tower-http = { version = "0.7.0", features = ["trace"] }
 tower = { version = "0.5.2", features = ["util"] }
 config = { version = "0.15.13", default-features = false, features = ["toml", "convert-case"] }
 anyhow = "1.0.98"
